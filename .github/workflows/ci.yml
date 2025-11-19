@@ -67,30 +67,45 @@ jobs:
       run: |
         cd build
         ctest --output-on-failure -R LoggerTests -V
+      # Tests will fail CI if they fail (ctest exits with non-zero on failure)
+    
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: build/test-results.xml
+        check_name: Test Results
+        comment_mode: create new
+        report_individual_runs: true
+        deduplicate_classes_by_file_name: true
+        # GoogleTest XML format is supported
+        # Test results will appear in GitHub Actions UI and PR comments
       
     - name: Generate coverage report
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         cd build
-        lcov --capture --directory . --output-file coverage.info --rc branch_coverage=1 --ignore-errors mismatch,negative
-        lcov --remove coverage.info '/usr/*' '*/_deps/*' '*/tests/*' --output-file coverage_filtered.info --rc branch_coverage=1 --ignore-errors unused,negative
+        lcov --capture --directory . --output-file coverage.info --rc branch_coverage=1 --ignore-errors mismatch,negative,inconsistent,unsupported,format
+        lcov --remove coverage.info '/usr/*' '*/_deps/*' '*/tests/*' --output-file coverage_filtered.info --rc branch_coverage=1 --ignore-errors unused,negative,inconsistent,unsupported,format
         lcov --list coverage_filtered.info
         genhtml coverage_filtered.info --output-directory coverage_html --rc branch_coverage=1 --legend --title "VROOM Engine Coverage"
       
     - name: Upload coverage HTML report
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-report
+        name: coverage-report-${{ github.event_name }}-${{ github.sha }}
         path: build/coverage_html
         retention-days: 30
       
     - name: Upload coverage to Codecov
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: codecov/codecov-action@v4
       with:
         file: ./build/coverage_filtered.info
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
+        # Token is optional for public repos - Codecov will auto-detect
+        # For private repos, add CODECOV_TOKEN to GitHub secrets
+        token: ${{ secrets.CODECOV_TOKEN }}
+        # Generate coverage for PRs to show coverage changes
+        # For main branch, this will update the main coverage report
 

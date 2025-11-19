@@ -43,3 +43,8 @@ endif()
 # Add test to CTest
 add_test(NAME LoggerTests COMMAND logger_tests)
 
+# Configure test to output JUnit XML for GitHub Actions
+set_tests_properties(LoggerTests PROPERTIES
+    ENVIRONMENT "GTEST_OUTPUT=xml:${CMAKE_BINARY_DIR}/test-results.xml"
+)
+

@@ -2,6 +2,9 @@
 
 **V**ulkan **R**eal-time **O**bject **O**utput **M**anager
 
+[![CI](https://github.com/rayanedjellabi/VROOM/actions/workflows/ci.yml/badge.svg)](https://github.com/rayanedjellabi/VROOM/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/rayanedjellabi/VROOM/branch/main/graph/badge.svg)](https://codecov.io/gh/rayanedjellabi/VROOM)
+
 A work-in-progress Entity Component System (ECS) game engine built on Vulkan, designed for high-performance real-time rendering and game development.
 
 ## Overview
