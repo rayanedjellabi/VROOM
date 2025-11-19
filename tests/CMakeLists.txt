@@ -26,11 +26,12 @@ target_include_directories(logger_tests
 if(VROOM_ENABLE_COVERAGE)
     # Check if compiler supports coverage flags (GCC/Clang)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(logger_tests PRIVATE --coverage -fprofile-arcs -ftest-coverage)
+        # Use atomic profile updates to avoid race conditions in multi-threaded code
+        target_compile_options(logger_tests PRIVATE --coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic)
         target_link_options(logger_tests PRIVATE --coverage)
         
         # Also enable coverage for the vroom library
-        target_compile_options(vroom PRIVATE --coverage -fprofile-arcs -ftest-coverage)
+        target_compile_options(vroom PRIVATE --coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic)
         target_link_options(vroom PRIVATE --coverage)
         
         message(STATUS "Code coverage enabled for ${CMAKE_CXX_COMPILER_ID}")
