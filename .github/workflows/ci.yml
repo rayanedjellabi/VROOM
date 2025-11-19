@@ -31,6 +31,8 @@ jobs:
           libwayland-dev \
           wayland-protocols \
           extra-cmake-modules \
+          libgl-dev \
+          libglvnd-dev \
           lcov
       
     - name: Install Vulkan SDK
