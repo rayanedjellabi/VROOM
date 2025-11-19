@@ -73,7 +73,7 @@ jobs:
       run: |
         cd build
         lcov --capture --directory . --output-file coverage.info --rc branch_coverage=1 --ignore-errors mismatch
-        lcov --remove coverage.info '/usr/*' '*/_deps/*' '*/tests/*' '*/build/*' --output-file coverage_filtered.info --rc branch_coverage=1
+        lcov --remove coverage.info '/usr/*' '*/_deps/*' '*/tests/*' --output-file coverage_filtered.info --rc branch_coverage=1 --ignore-errors unused
         lcov --list coverage_filtered.info
         genhtml coverage_filtered.info --output-directory coverage_html --rc branch_coverage=1 --legend --title "VROOM Engine Coverage"
       
