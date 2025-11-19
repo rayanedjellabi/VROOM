@@ -28,8 +28,9 @@ jobs:
           libxext-dev \
           libxkbcommon-dev \
           libxkbcommon-x11-dev \
-          wayland-scanner \
           libwayland-dev \
+          wayland-protocols \
+          extra-cmake-modules \
           lcov
       
     - name: Install Vulkan SDK
