@@ -35,7 +35,16 @@ jobs:
         wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc
         sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
         sudo apt-get update
-        sudo apt-get install -y vulkan-sdk
+        # Install essential Vulkan packages individually to avoid dependency issues with crashdiagnosticlayer
+        # These packages are sufficient for building Vulkan applications (crashdiagnosticlayer is optional)
+        sudo apt-get install -y \
+          vulkan-tools \
+          vulkan-validationlayers-dev \
+          vulkan-headers \
+          libvulkan-dev \
+          vulkan-loader \
+          vulkan-validationlayers \
+          vulkan-utils
       
     - name: Configure CMake
       run: |
