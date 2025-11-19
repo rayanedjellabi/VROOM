@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libx11-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxcursor-dev \
+          libxi-dev \
+          libxext-dev \
+          libxkbcommon-dev \
+          libxkbcommon-x11-dev \
+          lcov
+      
+    - name: Install Vulkan SDK
+      uses: humbletim/install-vulkan-sdk@v1
+      with:
+        version: '1.3.268.0'
+      
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DVROOM_BUILD_VROOM_EDITOR=OFF \
+          -DVROOM_ENABLE_COVERAGE=ON
+      
+    - name: Build
+      run: |
+        cmake --build build --config Debug -j$(nproc)
+      
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure -R LoggerTests -V
+      
+    - name: Generate coverage report
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        cd build
+        lcov --capture --directory . --output-file coverage.info --rc lcov_branch_coverage=1
+        lcov --remove coverage.info '/usr/*' '*/_deps/*' '*/tests/*' '*/build/*' --output-file coverage_filtered.info --rc lcov_branch_coverage=1
+        lcov --list coverage_filtered.info
+        genhtml coverage_filtered.info --output-directory coverage_html --rc lcov_branch_coverage=1 --legend --title "VROOM Engine Coverage"
+      
+    - name: Upload coverage HTML report
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: build/coverage_html
+        retention-days: 30
+      
+    - name: Upload coverage to Codecov
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./build/coverage_filtered.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
