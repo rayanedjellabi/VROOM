@@ -42,7 +42,7 @@ jobs:
           vulkan-validationlayers-dev \
           vulkan-headers \
           libvulkan-dev \
-          vulkan-loader \
+          libvulkan1 \
           vulkan-validationlayers \
           vulkan-utils
       
