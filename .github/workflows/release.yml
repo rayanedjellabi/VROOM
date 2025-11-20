@@ -98,8 +98,85 @@ jobs:
       run: |
         brew install cmake
     
-    - name: Install Vulkan SDK (macOS/Windows)
-      if: matrix.os_name != 'linux'
+    - name: Install Vulkan SDK (macOS)
+      if: matrix.os_name == 'macos'
+      run: |
+        # Get latest version
+        VULKAN_VERSION=$(curl -s https://vulkan.lunarg.com/sdk/latest/mac.txt)
+        echo "VULKAN_VERSION=$VULKAN_VERSION" >> $GITHUB_ENV
+        echo "Installing Vulkan SDK version $VULKAN_VERSION"
+        
+        # Download and extract
+        curl -L -o vulkan_sdk.zip "https://sdk.lunarg.com/sdk/download/${VULKAN_VERSION}/mac/vulkan_sdk.zip?Human=true"
+        unzip -q vulkan_sdk.zip
+        
+        # Extract SDK from .app bundle
+        APP_NAME="vulkansdk-macOS-${VULKAN_VERSION}.app"
+        if [ -d "$APP_NAME" ]; then
+          # Remove quarantine attribute to allow execution
+          xattr -cr "$APP_NAME" || true
+          
+          # Create installation directory
+          INSTALL_DIR="$HOME/VulkanSDK/${VULKAN_VERSION}"
+          mkdir -p "$INSTALL_DIR"
+          
+          # Run the installer in non-interactive mode
+          # The installer extracts to ~/VulkanSDK/${VULKAN_VERSION}/macOS
+          # Try running the installer with various flag combinations
+          INSTALLER_CMD="$APP_NAME/Contents/MacOS/vulkansdk-macOS-${VULKAN_VERSION}"
+          
+          # Try different installer command variations
+          "$INSTALLER_CMD" --root "$HOME/VulkanSDK" --accept-licenses --default-answer --confirm-command install 2>&1 || \
+          "$INSTALLER_CMD" --root "$HOME/VulkanSDK" --accept-licenses install 2>&1 || \
+          "$INSTALLER_CMD" install --root "$HOME/VulkanSDK" 2>&1 || {
+            echo "Installer failed, trying alternative extraction method..."
+            # Alternative: try to extract installer.dat directly
+            cd "$APP_NAME/Contents/Resources"
+            # installer.dat is typically a xar archive
+            if command -v xar &> /dev/null; then
+              xar -xf installer.dat 2>/dev/null || true
+            fi
+            # Look for payload directory
+            if [ -d "payload" ]; then
+              cp -r payload/* "$INSTALL_DIR/" 2>/dev/null || true
+            fi
+            # Also check for other common extraction locations
+            if [ -d "macOS" ]; then
+              cp -r macOS/* "$INSTALL_DIR/" 2>/dev/null || true
+            fi
+            cd - > /dev/null
+          }
+          
+          # Find the actual SDK directory (usually in macOS subdirectory)
+          if [ -d "$INSTALL_DIR/macOS" ]; then
+            SDK_DIR="$INSTALL_DIR/macOS"
+          elif [ -d "$INSTALL_DIR" ]; then
+            SDK_DIR="$INSTALL_DIR"
+          else
+            # Try to find any VulkanSDK directory
+            SDK_DIR=$(find "$HOME/VulkanSDK" -type d -name "macOS" | head -1)
+            if [ -z "$SDK_DIR" ]; then
+              SDK_DIR=$(find "$HOME/VulkanSDK" -maxdepth 2 -type d | grep -E "${VULKAN_VERSION}" | head -1)
+            fi
+          fi
+          
+          if [ -n "$SDK_DIR" ] && [ -d "$SDK_DIR" ]; then
+            echo "VULKAN_SDK=$SDK_DIR" >> $GITHUB_ENV
+            echo "Vulkan SDK found at: $SDK_DIR"
+            ls -la "$SDK_DIR" || true
+          else
+            echo "Error: Could not find Vulkan SDK installation directory"
+            echo "Contents of $HOME/VulkanSDK:"
+            ls -la "$HOME/VulkanSDK" || true
+            exit 1
+          fi
+        else
+          echo "Error: Could not find $APP_NAME"
+          exit 1
+        fi
+    
+    - name: Install Vulkan SDK (Windows)
+      if: matrix.os_name == 'windows'
       uses: humbletim/install-vulkan-sdk@v1.2
       with:
         version: latest
@@ -113,12 +190,54 @@ jobs:
     - name: Configure CMake
       shell: bash
       run: |
+        # Debug: Print environment variables
+        echo "VULKAN_SDK=$VULKAN_SDK"
+        if [[ "${{ matrix.os_name }}" == "windows" ]]; then
+          # On Windows, the action sets VULKAN_SDK in the environment
+          # Ensure it's available and convert to Windows path format if needed
+          if [ -n "$VULKAN_SDK" ]; then
+            export VULKAN_SDK
+            echo "VULKAN_SDK is set to: $VULKAN_SDK"
+            # Verify the directory exists
+            if [ -d "$VULKAN_SDK" ]; then
+              echo "VULKAN_SDK directory exists"
+              ls -la "$VULKAN_SDK" || true
+            else
+              echo "Warning: VULKAN_SDK directory does not exist: $VULKAN_SDK"
+            fi
+          else
+            echo "Error: VULKAN_SDK is not set"
+            exit 1
+          fi
+        fi
+        
         if [[ "${{ matrix.os_name }}" == "macos" && "${{ matrix.arch }}" != "" ]]; then
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
             -DVROOM_BUILD_VROOM_EDITOR=ON \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
+            -DVULKAN_SDK="$VULKAN_SDK"
+        elif [[ "${{ matrix.os_name }}" == "windows" ]]; then
+          # On Windows, explicitly pass VULKAN_SDK to CMake
+          # Convert path separators if needed (bash on Windows might use /)
+          # CMake handles both / and \ on Windows, but ensure paths are correct
+          VK_SDK=$(echo "$VULKAN_SDK" | sed 's|\\|/|g')
+          VK_INCLUDE="$VK_SDK/Include"
+          VK_LIB="$VK_SDK/Lib/vulkan-1.lib"
+          
+          echo "Using Vulkan SDK paths:"
+          echo "  VULKAN_SDK: $VK_SDK"
+          echo "  Include: $VK_INCLUDE"
+          echo "  Library: $VK_LIB"
+          
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
+            -DVROOM_BUILD_VROOM_EDITOR=ON \
+            -DVULKAN_SDK="$VK_SDK" \
+            -DVulkan_INCLUDE_DIR="$VK_INCLUDE" \
+            -DVulkan_LIBRARY="$VK_LIB"
         else
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
