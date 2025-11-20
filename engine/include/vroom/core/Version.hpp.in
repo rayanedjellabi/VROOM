@@ -1,0 +1,39 @@
+#pragma once
+
+// This is a CMake template file (.hpp.in)
+// CMake will process this file and replace @VARIABLE@ placeholders
+// The generated file will be at: build/include/vroom/core/Version.hpp
+
+#include <string>
+
+namespace vroom {
+
+/**
+ * @brief Version information for the VROOM Engine
+ */
+struct Version {
+    static constexpr int MAJOR = @VROOM_VERSION_MAJOR@;
+    static constexpr int MINOR = @VROOM_VERSION_MINOR@;
+    static constexpr int PATCH = @VROOM_VERSION_PATCH@;
+    static constexpr const char* STRING = "@VROOM_VERSION_STRING@";
+    static constexpr const char* GIT_HASH = "@VROOM_GIT_HASH@";
+    
+    /**
+     * @brief Get the full version string
+     * @return Version string in format "MAJOR.MINOR.PATCH"
+     */
+    static std::string getVersionString() {
+        return std::string(STRING);
+    }
+    
+    /**
+     * @brief Get the version as an integer (MAJOR * 10000 + MINOR * 100 + PATCH)
+     * @return Version as integer
+     */
+    static constexpr int getVersionInt() {
+        return MAJOR * 10000 + MINOR * 100 + PATCH;
+    }
+};
+
+} // namespace vroom
+

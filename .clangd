@@ -1,0 +1,10 @@
+CompileFlags:
+  Add: 
+    - -Wno-unknown-attributes
+Diagnostics:
+  UnusedIncludes: None
+Index:
+  Background: Build
+  Exclude:
+    - "**/*.in"
+

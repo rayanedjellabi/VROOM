@@ -12,6 +12,73 @@ set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 option(VROOM_BUILD_VROOM_EDITOR "Build the VROOM Editor" ON)
 option(VROOM_ENABLE_COVERAGE "Enable code coverage" OFF)
 
+# ---- Version Handling ----
+# Version can be set via VROOM_VERSION CMake variable (e.g., from GitHub Actions)
+# If not set, try to get it from git tag, otherwise default to 0.0.0
+if(DEFINED VROOM_VERSION)
+    set(VROOM_VERSION_STRING ${VROOM_VERSION})
+else()
+    find_package(Git QUIET)
+    if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} describe --tags --abbrev=0
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_TAG
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+        if(GIT_TAG)
+            # Remove 'v' prefix if present
+            string(REGEX REPLACE "^v" "" VROOM_VERSION_STRING "${GIT_TAG}")
+        else()
+            set(VROOM_VERSION_STRING "0.0.0")
+        endif()
+    else()
+        set(VROOM_VERSION_STRING "0.0.0")
+    endif()
+endif()
+
+# Parse version string into components
+string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" VERSION_MATCH "${VROOM_VERSION_STRING}")
+if(VERSION_MATCH)
+    set(VROOM_VERSION_MAJOR ${CMAKE_MATCH_1})
+    set(VROOM_VERSION_MINOR ${CMAKE_MATCH_2})
+    set(VROOM_VERSION_PATCH ${CMAKE_MATCH_3})
+else()
+    # Fallback if version string doesn't match expected format
+    set(VROOM_VERSION_MAJOR 0)
+    set(VROOM_VERSION_MINOR 0)
+    set(VROOM_VERSION_PATCH 0)
+endif()
+
+# Get git hash for build info
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        OUTPUT_VARIABLE VROOM_GIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+else()
+    set(VROOM_GIT_HASH "unknown")
+endif()
+
+message(STATUS "VROOM Version: ${VROOM_VERSION_STRING} (${VROOM_VERSION_MAJOR}.${VROOM_VERSION_MINOR}.${VROOM_VERSION_PATCH})")
+message(STATUS "Git Hash: ${VROOM_GIT_HASH}")
+
+# Generate version header
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/vroom/core)
+configure_file(
+    ${PROJECT_SOURCE_DIR}/engine/include/vroom/core/Version.hpp.in
+    ${PROJECT_BINARY_DIR}/include/vroom/core/Version.hpp
+    @ONLY
+)
+
+# Add generated include directory
+include_directories(${PROJECT_BINARY_DIR}/include)
+
 include(FetchContent)
 
 # ---- Dependencies ----
