@@ -119,9 +119,8 @@ jobs:
           # Clean up previous installation attempt to avoid "directory not empty" errors
           rm -rf "$HOME/VulkanSDK"
 
-          # Create installation directory
+          # Define expected installation directory (but don't create it manually)
           INSTALL_DIR="$HOME/VulkanSDK/${VULKAN_VERSION}"
-          mkdir -p "$INSTALL_DIR"
           
           # Run the installer in non-interactive mode
           # The installer extracts to ~/VulkanSDK/${VULKAN_VERSION}/macOS
@@ -220,7 +219,7 @@ jobs:
       uses: humbletim/install-vulkan-sdk@v1.2
       with:
         version: latest
-        cache: true
+        cache: false
     
     - name: Verify Vulkan SDK installation (Windows)
       if: matrix.os_name == 'windows'
