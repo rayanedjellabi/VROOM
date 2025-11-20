@@ -148,26 +148,62 @@ jobs:
           }
           
           # Find the actual SDK directory (usually in macOS subdirectory)
+          # The installer typically creates: ~/VulkanSDK/${VULKAN_VERSION}/macOS
           if [ -d "$INSTALL_DIR/macOS" ]; then
             SDK_DIR="$INSTALL_DIR/macOS"
-          elif [ -d "$INSTALL_DIR" ]; then
+          elif [ -d "$INSTALL_DIR" ] && [ -d "$INSTALL_DIR/include" ] && [ -d "$INSTALL_DIR/lib" ]; then
+            # SDK is directly in the version directory
             SDK_DIR="$INSTALL_DIR"
           else
-            # Try to find any VulkanSDK directory
+            # Try to find any VulkanSDK directory with include/lib
             SDK_DIR=$(find "$HOME/VulkanSDK" -type d -name "macOS" | head -1)
-            if [ -z "$SDK_DIR" ]; then
-              SDK_DIR=$(find "$HOME/VulkanSDK" -maxdepth 2 -type d | grep -E "${VULKAN_VERSION}" | head -1)
+            if [ -z "$SDK_DIR" ] || [ ! -d "$SDK_DIR/include" ]; then
+              # Look for directory with include and lib subdirectories
+              SDK_DIR=$(find "$HOME/VulkanSDK" -type d -path "*/include" -o -path "*/lib" | head -1 | sed 's|/include.*||' | sed 's|/lib.*||')
             fi
           fi
           
+          # Verify SDK directory has required components
           if [ -n "$SDK_DIR" ] && [ -d "$SDK_DIR" ]; then
-            echo "VULKAN_SDK=$SDK_DIR" >> $GITHUB_ENV
-            echo "Vulkan SDK found at: $SDK_DIR"
+            echo "Checking SDK directory: $SDK_DIR"
             ls -la "$SDK_DIR" || true
+            
+            # Check for include and lib directories
+            if [ -d "$SDK_DIR/include" ] && [ -d "$SDK_DIR/lib" ]; then
+              echo "VULKAN_SDK=$SDK_DIR" >> $GITHUB_ENV
+              echo "Vulkan SDK found at: $SDK_DIR"
+              echo "Include directory: $SDK_DIR/include"
+              echo "Lib directory: $SDK_DIR/lib"
+              ls -la "$SDK_DIR/include" | head -5 || true
+              ls -la "$SDK_DIR/lib" | head -5 || true
+            else
+              echo "Warning: SDK directory found but missing include/lib subdirectories"
+              echo "Contents of $SDK_DIR:"
+              ls -la "$SDK_DIR" || true
+              # Try parent directory if this one doesn't have include/lib
+              PARENT_DIR=$(dirname "$SDK_DIR")
+              if [ -d "$PARENT_DIR/macOS" ]; then
+                SDK_DIR="$PARENT_DIR/macOS"
+                echo "Trying parent macOS directory: $SDK_DIR"
+                if [ -d "$SDK_DIR/include" ] && [ -d "$SDK_DIR/lib" ]; then
+                  echo "VULKAN_SDK=$SDK_DIR" >> $GITHUB_ENV
+                  echo "Vulkan SDK found at: $SDK_DIR"
+                else
+                  echo "Error: Could not find valid Vulkan SDK installation"
+                  exit 1
+                fi
+              else
+                echo "Error: Could not find valid Vulkan SDK installation"
+                exit 1
+              fi
+            fi
           else
             echo "Error: Could not find Vulkan SDK installation directory"
             echo "Contents of $HOME/VulkanSDK:"
             ls -la "$HOME/VulkanSDK" || true
+            if [ -d "$HOME/VulkanSDK" ]; then
+              find "$HOME/VulkanSDK" -type d -maxdepth 3 | head -20 || true
+            fi
             exit 1
           fi
         else
@@ -177,10 +213,106 @@ jobs:
     
     - name: Install Vulkan SDK (Windows)
       if: matrix.os_name == 'windows'
+      id: install_vulkan
       uses: humbletim/install-vulkan-sdk@v1.2
       with:
         version: latest
         cache: true
+    
+    - name: Verify Vulkan SDK installation (Windows)
+      if: matrix.os_name == 'windows'
+      shell: bash
+      run: |
+        echo "Checking VULKAN_SDK environment variable:"
+        echo "VULKAN_SDK=$VULKAN_SDK"
+        
+        # The action should set VULKAN_SDK, but verify it exists
+        VK_SDK_BASE=""
+        if [ -n "$VULKAN_SDK" ]; then
+          VK_SDK_BASE=$(echo "$VULKAN_SDK" | sed 's|\\|/|g')
+        fi
+        
+        # Check if base path exists
+        if [ -n "$VK_SDK_BASE" ] && [ -d "$VK_SDK_BASE" ]; then
+          echo "VULKAN_SDK base path exists: $VK_SDK_BASE"
+          
+          # Check if Include directory exists directly
+          if [ -d "$VK_SDK_BASE/Include" ] || [ -d "$VK_SDK_BASE/include" ]; then
+            echo "Vulkan SDK found at: $VK_SDK_BASE"
+            echo "VULKAN_SDK=$VK_SDK_BASE" >> $GITHUB_ENV
+          else
+            # Check for versioned subdirectories
+            echo "Checking for versioned subdirectories..."
+            VK_SDK=$(find "$VK_SDK_BASE" -maxdepth 1 -type d | grep -E "[0-9]+\.[0-9]+\.[0-9]+" | sort -V | tail -1)
+            if [ -n "$VK_SDK" ] && [ -d "$VK_SDK" ]; then
+              if [ -d "$VK_SDK/Include" ] || [ -d "$VK_SDK/include" ]; then
+                echo "Found Vulkan SDK in versioned subdirectory: $VK_SDK"
+                echo "VULKAN_SDK=$VK_SDK" >> $GITHUB_ENV
+              else
+                echo "Warning: Versioned directory found but no Include directory"
+              fi
+            else
+              echo "Warning: No versioned subdirectory found"
+              echo "Contents of $VK_SDK_BASE:"
+              ls -la "$VK_SDK_BASE" || true
+            fi
+          fi
+        else
+          echo "Warning: VULKAN_SDK path does not exist: $VK_SDK_BASE"
+          echo "Trying to find Vulkan SDK in common locations..."
+          
+          # Try to find it in the workspace or common locations
+          if [ -d "$GITHUB_WORKSPACE/VULKAN_SDK" ]; then
+            VK_SDK_BASE="$GITHUB_WORKSPACE/VULKAN_SDK"
+          elif [ -d "/c/VulkanSDK" ]; then
+            # Find latest version
+            VK_SDK_BASE=$(find /c/VulkanSDK -maxdepth 1 -type d | grep -E "[0-9]+\.[0-9]+\.[0-9]+" | sort -V | tail -1)
+          fi
+          
+          if [ -n "$VK_SDK_BASE" ] && [ -d "$VK_SDK_BASE" ]; then
+            if [ -d "$VK_SDK_BASE/Include" ] || [ -d "$VK_SDK_BASE/include" ]; then
+              echo "Found Vulkan SDK at: $VK_SDK_BASE"
+              echo "VULKAN_SDK=$VK_SDK_BASE" >> $GITHUB_ENV
+            fi
+          fi
+        fi
+        
+        # Final verification - read from GITHUB_ENV if we set it, otherwise use original
+        if [ -f "$GITHUB_ENV" ]; then
+          # Source the env file to get our updated value
+          set -a
+          source "$GITHUB_ENV" 2>/dev/null || true
+          set +a
+        fi
+        
+        # Use the value we found or the original
+        VK_SDK_FINAL="$VULKAN_SDK"
+        if [ -n "$VK_SDK" ]; then
+          VK_SDK_FINAL="$VK_SDK"
+        fi
+        
+        if [ -n "$VK_SDK_FINAL" ]; then
+          VK_SDK_FINAL=$(echo "$VK_SDK_FINAL" | sed 's|\\|/|g')
+          if [ -d "$VK_SDK_FINAL" ]; then
+            echo "Final VULKAN_SDK: $VK_SDK_FINAL"
+            echo "Contents:"
+            ls -la "$VK_SDK_FINAL" | head -10 || true
+            if [ -d "$VK_SDK_FINAL/Include" ] || [ -d "$VK_SDK_FINAL/include" ]; then
+              echo "Vulkan SDK verification successful"
+              # Ensure it's set for next steps
+              echo "VULKAN_SDK=$VK_SDK_FINAL" >> $GITHUB_ENV
+            else
+              echo "Error: Include directory not found in $VK_SDK_FINAL"
+              exit 1
+            fi
+          else
+            echo "Error: VULKAN_SDK path does not exist: $VK_SDK_FINAL"
+            exit 1
+          fi
+        else
+          echo "Error: VULKAN_SDK is not set"
+          exit 1
+        fi
     
     - name: Install dependencies (Windows)
       if: matrix.os_name == 'windows'
@@ -194,50 +326,211 @@ jobs:
         echo "VULKAN_SDK=$VULKAN_SDK"
         if [[ "${{ matrix.os_name }}" == "windows" ]]; then
           # On Windows, the action sets VULKAN_SDK in the environment
-          # Ensure it's available and convert to Windows path format if needed
+          # The action might set it in a different format, so check multiple sources
+          if [ -z "$VULKAN_SDK" ]; then
+            # Try reading from environment file if action uses it
+            if [ -f "$GITHUB_ENV" ]; then
+              source "$GITHUB_ENV" 2>/dev/null || true
+            fi
+          fi
+          
+          # Also check common Windows environment variable locations
+          if [ -z "$VULKAN_SDK" ]; then
+            # Try to find Vulkan SDK in common locations
+            if [ -d "/c/VulkanSDK" ]; then
+              VULKAN_SDK=$(find /c/VulkanSDK -maxdepth 1 -type d | grep -E "[0-9]+\.[0-9]+\.[0-9]+" | sort -V | tail -1)
+            elif [ -d "C:/VulkanSDK" ]; then
+              VULKAN_SDK=$(find C:/VulkanSDK -maxdepth 1 -type d | grep -E "[0-9]+\.[0-9]+\.[0-9]+" | sort -V | tail -1)
+            fi
+          fi
+          
           if [ -n "$VULKAN_SDK" ]; then
             export VULKAN_SDK
             echo "VULKAN_SDK is set to: $VULKAN_SDK"
+            
+            # Convert to forward slashes for bash on Windows
+            VULKAN_SDK=$(echo "$VULKAN_SDK" | sed 's|\\|/|g')
+            export VULKAN_SDK
+            
             # Verify the directory exists
             if [ -d "$VULKAN_SDK" ]; then
               echo "VULKAN_SDK directory exists"
+              echo "Contents of VULKAN_SDK:"
               ls -la "$VULKAN_SDK" || true
+              
+              # Check for Include directory (case-insensitive on Windows)
+              if [ -d "$VULKAN_SDK/Include" ] || [ -d "$VULKAN_SDK/include" ]; then
+                echo "Found Include directory in $VULKAN_SDK"
+              else
+                echo "Include directory not found in $VULKAN_SDK, checking for versioned subdirectories..."
+                # Look for versioned subdirectories
+                VK_VERSIONED=$(find "$VULKAN_SDK" -maxdepth 1 -type d | grep -E "[0-9]+\.[0-9]+\.[0-9]+" | sort -V | tail -1)
+                if [ -n "$VK_VERSIONED" ] && [ -d "$VK_VERSIONED" ]; then
+                  if [ -d "$VK_VERSIONED/Include" ] || [ -d "$VK_VERSIONED/include" ]; then
+                    echo "Found Vulkan SDK in versioned subdirectory: $VK_VERSIONED"
+                    VULKAN_SDK="$VK_VERSIONED"
+                    export VULKAN_SDK
+                  else
+                    echo "Warning: Versioned directory found but no Include directory"
+                    echo "Searching for include directories:"
+                    find "$VULKAN_SDK" -maxdepth 3 -type d -iname "*include*" | head -5 || true
+                  fi
+                else
+                  echo "Warning: Neither Include directory nor versioned subdirectory found"
+                  echo "Searching for include directories:"
+                  find "$VULKAN_SDK" -maxdepth 3 -type d -iname "*include*" | head -5 || true
+                fi
+              fi
+              
+              # Final check - if still no Include, error out
+              if [ ! -d "$VULKAN_SDK/Include" ] && [ ! -d "$VULKAN_SDK/include" ]; then
+                echo "Error: Could not find Vulkan SDK Include directory"
+                echo "VULKAN_SDK is set to: $VULKAN_SDK"
+                echo "Contents:"
+                ls -la "$VULKAN_SDK" || true
+                exit 1
+              fi
             else
-              echo "Warning: VULKAN_SDK directory does not exist: $VULKAN_SDK"
+              echo "Error: VULKAN_SDK directory does not exist: $VULKAN_SDK"
+              echo "Searching for Vulkan SDK in common locations:"
+              find /c -maxdepth 3 -type d -iname "*vulkan*" 2>/dev/null | head -10 || true
+              exit 1
             fi
           else
-            echo "Error: VULKAN_SDK is not set"
+            echo "Error: VULKAN_SDK is not set and could not be found"
+            echo "Environment variables:"
+            env | grep -i vulkan || true
             exit 1
           fi
         fi
         
         if [[ "${{ matrix.os_name }}" == "macos" && "${{ matrix.arch }}" != "" ]]; then
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
-            -DVROOM_BUILD_VROOM_EDITOR=ON \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
-            -DVULKAN_SDK="$VULKAN_SDK"
+          # On macOS, explicitly pass Vulkan SDK paths to CMake
+          # The SDK structure is: VULKAN_SDK/include and VULKAN_SDK/lib
+          VK_SDK="$VULKAN_SDK"
+          VK_INCLUDE="$VK_SDK/include"
+          
+          echo "Using Vulkan SDK paths on macOS:"
+          echo "  VULKAN_SDK: $VK_SDK"
+          echo "  Include: $VK_INCLUDE"
+          
+          # Verify paths exist
+          if [ ! -d "$VK_INCLUDE" ]; then
+            echo "Error: Vulkan include directory not found: $VK_INCLUDE"
+            echo "Contents of VULKAN_SDK ($VK_SDK):"
+            ls -la "$VK_SDK" || true
+            exit 1
+          fi
+          
+          # Find the Vulkan library (could be libvulkan.dylib, libvulkan.1.dylib, etc.)
+          VK_LIB=""
+          if [ -d "$VK_SDK/lib" ]; then
+            VK_LIB=$(find "$VK_SDK/lib" -name "libvulkan*.dylib" | head -1)
+            if [ -n "$VK_LIB" ]; then
+              echo "  Library: $VK_LIB"
+            else
+              echo "Warning: No Vulkan library found in $VK_SDK/lib"
+              echo "Contents of lib directory:"
+              ls -la "$VK_SDK/lib" || true
+            fi
+          fi
+          
+          # Build CMake command with explicit paths
+          if [ -n "$VK_LIB" ]; then
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
+              -DVROOM_BUILD_VROOM_EDITOR=ON \
+              -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
+              -DVULKAN_SDK="$VK_SDK" \
+              -DVulkan_INCLUDE_DIR="$VK_INCLUDE" \
+              -DVulkan_LIBRARY="$VK_LIB"
+          else
+            # Try without explicit library path - CMake should find it
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
+              -DVROOM_BUILD_VROOM_EDITOR=ON \
+              -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
+              -DVULKAN_SDK="$VK_SDK" \
+              -DVulkan_INCLUDE_DIR="$VK_INCLUDE"
+          fi
         elif [[ "${{ matrix.os_name }}" == "windows" ]]; then
           # On Windows, explicitly pass VULKAN_SDK to CMake
           # Convert path separators if needed (bash on Windows might use /)
           # CMake handles both / and \ on Windows, but ensure paths are correct
           VK_SDK=$(echo "$VULKAN_SDK" | sed 's|\\|/|g')
-          VK_INCLUDE="$VK_SDK/Include"
-          VK_LIB="$VK_SDK/Lib/vulkan-1.lib"
           
-          echo "Using Vulkan SDK paths:"
+          # Find Include directory (case-insensitive on Windows)
+          VK_INCLUDE=""
+          if [ -d "$VK_SDK/Include" ]; then
+            VK_INCLUDE="$VK_SDK/Include"
+          elif [ -d "$VK_SDK/include" ]; then
+            VK_INCLUDE="$VK_SDK/include"
+          else
+            # Try to find it
+            VK_INCLUDE=$(find "$VK_SDK" -maxdepth 2 -type d -iname "include" | head -1)
+          fi
+          
+          # Find Lib directory and library file
+          VK_LIB=""
+          if [ -d "$VK_SDK/Lib" ]; then
+            if [ -f "$VK_SDK/Lib/vulkan-1.lib" ]; then
+              VK_LIB="$VK_SDK/Lib/vulkan-1.lib"
+            elif [ -f "$VK_SDK/Lib/vulkan.lib" ]; then
+              VK_LIB="$VK_SDK/Lib/vulkan.lib"
+            else
+              # Find any .lib file in Lib directory
+              VK_LIB=$(find "$VK_SDK/Lib" -maxdepth 1 -name "vulkan*.lib" | head -1)
+            fi
+          elif [ -d "$VK_SDK/lib" ]; then
+            if [ -f "$VK_SDK/lib/vulkan-1.lib" ]; then
+              VK_LIB="$VK_SDK/lib/vulkan-1.lib"
+            elif [ -f "$VK_SDK/lib/vulkan.lib" ]; then
+              VK_LIB="$VK_SDK/lib/vulkan.lib"
+            else
+              VK_LIB=$(find "$VK_SDK/lib" -maxdepth 1 -name "vulkan*.lib" | head -1)
+            fi
+          else
+            # Try to find lib directory
+            LIB_DIR=$(find "$VK_SDK" -maxdepth 2 -type d -iname "lib" | head -1)
+            if [ -n "$LIB_DIR" ]; then
+              VK_LIB=$(find "$LIB_DIR" -maxdepth 1 -name "vulkan*.lib" | head -1)
+            fi
+          fi
+          
+          echo "Using Vulkan SDK paths on Windows:"
           echo "  VULKAN_SDK: $VK_SDK"
           echo "  Include: $VK_INCLUDE"
           echo "  Library: $VK_LIB"
           
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
-            -DVROOM_BUILD_VROOM_EDITOR=ON \
-            -DVULKAN_SDK="$VK_SDK" \
-            -DVulkan_INCLUDE_DIR="$VK_INCLUDE" \
-            -DVulkan_LIBRARY="$VK_LIB"
+          # Verify paths exist
+          if [ -z "$VK_INCLUDE" ] || [ ! -d "$VK_INCLUDE" ]; then
+            echo "Error: Vulkan include directory not found"
+            echo "Searched in: $VK_SDK"
+            exit 1
+          fi
+          
+          if [ -z "$VK_LIB" ] || [ ! -f "$VK_LIB" ]; then
+            echo "Warning: Vulkan library not found at expected location"
+            echo "Searched for: $VK_SDK/Lib/vulkan-1.lib or $VK_SDK/lib/vulkan-1.lib"
+            echo "CMake will try to find it automatically"
+            # Don't pass library path, let CMake find it
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
+              -DVROOM_BUILD_VROOM_EDITOR=ON \
+              -DVULKAN_SDK="$VK_SDK" \
+              -DVulkan_INCLUDE_DIR="$VK_INCLUDE"
+          else
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
+              -DVROOM_BUILD_VROOM_EDITOR=ON \
+              -DVULKAN_SDK="$VK_SDK" \
+              -DVulkan_INCLUDE_DIR="$VK_INCLUDE" \
+              -DVulkan_LIBRARY="$VK_LIB"
+          fi
         else
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
