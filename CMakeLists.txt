@@ -146,7 +146,11 @@ endif()
 add_subdirectory(engine)
 
 if(VROOM_BUILD_VROOM_EDITOR)
-    add_subdirectory(vroom_editor)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vroom_editor/CMakeLists.txt")
+        add_subdirectory(vroom_editor)
+    else()
+        message(WARNING "vroom_editor directory not found. Skipping editor build.")
+    endif()
 endif()
 
 # Enable testing

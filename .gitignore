@@ -41,8 +41,7 @@ Makefile
 *.exe
 *.out
 *.app
-vroom_editor
-vroom_editor.exe
+# Note: vroom_editor executable is in build/ which is already ignored
 
 # Debug files
 *.dSYM/

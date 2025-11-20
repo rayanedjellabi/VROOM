@@ -42,6 +42,7 @@ jobs:
     
     - name: Extract version from tag
       id: version
+      shell: bash
       run: |
         if [[ "${{ github.event.release.tag_name }}" != "" ]]; then
           VERSION="${{ github.event.release.tag_name }}"
@@ -88,45 +89,26 @@ jobs:
           vulkan-validationlayers-dev \
           vulkan-headers \
           libvulkan-dev \
-          libvulkan1
+          libvulkan1 \
+          vulkan-validationlayers \
+          vulkan-utils
     
     - name: Install dependencies (macOS)
       if: matrix.os_name == 'macos'
       run: |
         brew install cmake
     
-    - name: Install Vulkan SDK (macOS)
-      if: matrix.os_name == 'macos'
-      run: |
-        brew install --cask vulkan-sdk
-        export VULKAN_SDK=$(brew --prefix)/Cellar/vulkan-sdk/*/share/vulkan
-        echo "VULKAN_SDK=$VULKAN_SDK" >> $GITHUB_ENV
+    - name: Install Vulkan SDK (macOS/Windows)
+      if: matrix.os_name != 'linux'
+      uses: humbletim/install-vulkan-sdk@v1.2
+      with:
+        version: latest
+        cache: true
     
     - name: Install dependencies (Windows)
       if: matrix.os_name == 'windows'
       run: |
         choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
-    
-    - name: Install Vulkan SDK (Windows)
-      if: matrix.os_name == 'windows'
-      run: |
-        $vulkanVersion = "1.3.280.0"
-        $vulkanUrl = "https://sdk.lunarg.com/sdk/download/$vulkanVersion/windows/VulkanSDK-$vulkanVersion-Installer.exe"
-        $installerPath = "$env:TEMP\VulkanSDK-Installer.exe"
-        Write-Host "Downloading Vulkan SDK $vulkanVersion..."
-        Invoke-WebRequest -Uri $vulkanUrl -OutFile $installerPath
-        Write-Host "Installing Vulkan SDK..."
-        Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait -NoNewWindow
-        $vulkanPath = "${env:ProgramFiles}\VulkanSDK\$vulkanVersion"
-        if (Test-Path $vulkanPath) {
-          echo "VULKAN_SDK=$vulkanPath" >> $env:GITHUB_ENV
-          echo "$vulkanPath\Bin" >> $env:GITHUB_PATH
-          echo "$vulkanPath\Lib" >> $env:GITHUB_PATH
-          echo "$vulkanPath\Include" >> $env:GITHUB_PATH
-        } else {
-          Write-Error "Vulkan SDK installation failed or path not found"
-          exit 1
-        }
     
     - name: Configure CMake
       shell: bash
@@ -143,8 +125,6 @@ jobs:
             -DVROOM_VERSION=${{ steps.version.outputs.VERSION }} \
             -DVROOM_BUILD_VROOM_EDITOR=ON
         fi
-      env:
-        VULKAN_SDK: ${{ env.VULKAN_SDK }}
     
     - name: Build
       run: |
