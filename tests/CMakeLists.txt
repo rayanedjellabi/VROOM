@@ -26,12 +26,15 @@ add_executable(core_tests
     core/EntityComponentTest.cpp
     core/ComponentLifecycleTest.cpp
     core/EntityHierarchyTest.cpp
+    core/SceneTest.cpp
+    core/SceneManagerTest.cpp
 )
 
 target_link_libraries(core_tests
     PRIVATE
         vroom
         GTest::gtest_main
+        GTest::gmock
         Threads::Threads
 )
 

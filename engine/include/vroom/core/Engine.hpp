@@ -1,11 +1,25 @@
 #pragma once
 
+#include <memory>
+#include "vroom/core/SceneManager.hpp"
+
 namespace vroom {
 
 class Engine {
 public:
     Engine();
     ~Engine();
+
+    /// \brief Updates the engine systems.
+    /// \param deltaTime Time elapsed since the last frame.
+    void update(float deltaTime);
+
+    /// \brief Gets the scene manager.
+    /// \return Reference to the scene manager.
+    SceneManager& getSceneManager() { return *m_sceneManager; }
+
+private:
+    std::unique_ptr<SceneManager> m_sceneManager;
 };
 
-}
+} // namespace vroom

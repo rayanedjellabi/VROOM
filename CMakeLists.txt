@@ -123,7 +123,8 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/google/googletest.git
     GIT_TAG v1.14.0
 )
-set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+# We need GMock for mocking classes in tests
+set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 if(NOT TARGET ImGui)

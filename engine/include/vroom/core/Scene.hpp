@@ -1,0 +1,43 @@
+#pragma once
+
+#include <vector>
+#include <memory>
+#include <algorithm>
+#include "vroom/core/Entity.hpp"
+
+namespace vroom {
+
+class Scene : public std::enable_shared_from_this<Scene> {
+public:
+    Scene();
+    ~Scene();
+
+    /// \brief Creates a new entity in the scene.
+    /// \return Reference to the newly created entity.
+    Entity& createEntity();
+
+    /// \brief Destroys an entity and all its children.
+    /// \param entity The entity to destroy.
+    void destroyEntity(Entity& entity);
+
+    /// \brief Updates all entities in the scene.
+    /// \param deltaTime Time elapsed since the last frame.
+    void update(float deltaTime);
+
+    /// \brief Removes all entities from the scene.
+    void clear();
+
+    /// \brief Gets all root entities in the scene.
+    /// \return Vector of pointers to root entities.
+    std::vector<Entity*> getRootEntities() const;
+
+private:
+    EntityId m_nextEntityId = 1;
+    std::vector<std::shared_ptr<Entity>> m_entities;
+    
+    // Helper to generate unique IDs
+    EntityId generateEntityId();
+};
+
+} // namespace vroom
+
