@@ -13,7 +13,7 @@ namespace vroom {
 namespace logging {
 
 // Helper function to demangle class names
-inline std::string GetClassName(const std::type_info& typeInfo) {
+inline std::string getClassName(const std::type_info& typeInfo) {
 #ifdef __GNUC__
     int status = 0;
     char* demangled = abi::__cxa_demangle(typeInfo.name(), nullptr, nullptr, &status);
@@ -49,52 +49,52 @@ inline std::string GetClassName(const std::type_info& typeInfo) {
 // Usage: VROOM_ENGINE_LOG_DEBUG_CLASS("My message");
 // Note: These can only be used inside non-static member functions
 #define LOG_ENGINE_CLASS_DEBUG(message) \
-    vroom::logging::EngineLogger::GetInstance().Debug(vroom::logging::GetClassName(typeid(*this)), message)
+    vroom::logging::EngineLogger::getInstance().debug(vroom::logging::getClassName(typeid(*this)), message)
 
 #define LOG_ENGINE_CLASS_INFO(message) \
-    vroom::logging::EngineLogger::GetInstance().Info(vroom::logging::GetClassName(typeid(*this)), message)
+    vroom::logging::EngineLogger::getInstance().info(vroom::logging::getClassName(typeid(*this)), message)
 
 #define LOG_ENGINE_CLASS_WARNING(message) \
-    vroom::logging::EngineLogger::GetInstance().Warning(vroom::logging::GetClassName(typeid(*this)), message)
+    vroom::logging::EngineLogger::getInstance().warning(vroom::logging::getClassName(typeid(*this)), message)
 
 #define LOG_ENGINE_CLASS_ERROR(message) \
-    vroom::logging::EngineLogger::GetInstance().Error(vroom::logging::GetClassName(typeid(*this)), message)
+    vroom::logging::EngineLogger::getInstance().error(vroom::logging::getClassName(typeid(*this)), message)
 
 #define LOG_ENGINE_STATIC_DEBUG(className, message) \
-    vroom::logging::EngineLogger::GetInstance().Debug(className, message)
+    vroom::logging::EngineLogger::getInstance().debug(className, message)
 
 #define LOG_ENGINE_STATIC_INFO(className, message) \
-    vroom::logging::EngineLogger::GetInstance().Info(className, message)
+    vroom::logging::EngineLogger::getInstance().info(className, message)
 
 #define LOG_ENGINE_STATIC_WARNING(className, message) \
-    vroom::logging::EngineLogger::GetInstance().Warning(className, message)
+    vroom::logging::EngineLogger::getInstance().warning(className, message)
 
 #define LOG_ENGINE_STATIC_ERROR(className, message) \
-    vroom::logging::EngineLogger::GetInstance().Error(className, message)
+    vroom::logging::EngineLogger::getInstance().error(className, message)
 
 #define LOG_APP_CLASS_DEBUG(message) \
-    vroom::logging::ApplicationLogger::GetInstance().Debug(vroom::logging::GetClassName(typeid(*this)), message)
+    vroom::logging::ApplicationLogger::getInstance().debug(vroom::logging::getClassName(typeid(*this)), message)
 
 #define LOG_APP_CLASS_INFO(message) \
-    vroom::logging::ApplicationLogger::GetInstance().Info(vroom::logging::GetClassName(typeid(*this)), message)
+    vroom::logging::ApplicationLogger::getInstance().info(vroom::logging::getClassName(typeid(*this)), message)
 
 #define LOG_APP_CLASS_WARNING(message) \
-    vroom::logging::ApplicationLogger::GetInstance().Warning(vroom::logging::GetClassName(typeid(*this)), message)
+    vroom::logging::ApplicationLogger::getInstance().warning(vroom::logging::getClassName(typeid(*this)), message)
 
 #define LOG_APP_CLASS_ERROR(message) \
-    vroom::logging::ApplicationLogger::GetInstance().Error(vroom::logging::GetClassName(typeid(*this)), message)
+    vroom::logging::ApplicationLogger::getInstance().error(vroom::logging::getClassName(typeid(*this)), message)
 
 #define LOG_APP_STATIC_DEBUG(className, message) \
-    vroom::logging::ApplicationLogger::GetInstance().Debug(className, message)
+    vroom::logging::ApplicationLogger::getInstance().debug(className, message)
 
 #define LOG_APP_STATIC_INFO(className, message) \
-    vroom::logging::ApplicationLogger::GetInstance().Info(className, message)
+    vroom::logging::ApplicationLogger::getInstance().info(className, message)
 
 #define LOG_APP_STATIC_WARNING(className, message) \
-    vroom::logging::ApplicationLogger::GetInstance().Warning(className, message)
+    vroom::logging::ApplicationLogger::getInstance().warning(className, message)
 
 #define LOG_APP_STATIC_ERROR(className, message) \
-    vroom::logging::ApplicationLogger::GetInstance().Error(className, message)
+    vroom::logging::ApplicationLogger::getInstance().error(className, message)
 
 #define LOG_ENGINE_DEBUG(...) \
     EXPAND( LOGGER_GET_MACRO(__VA_ARGS__, LOG_ENGINE_STATIC_DEBUG, LOG_ENGINE_CLASS_DEBUG)(__VA_ARGS__) )

@@ -70,14 +70,14 @@ jobs:
     - name: Run tests
       run: |
         cd build
-        ctest --output-on-failure -R LoggerTests -V
+        ctest --output-on-failure -V
       # Tests will fail CI if they fail (ctest exits with non-zero on failure)
     
     - name: Publish Test Results
       uses: EnricoMi/publish-unit-test-result-action@v2
       if: always()
       with:
-        files: build/test-results.xml
+        files: build/test-results-*.xml
         check_name: Test Results
         comment_mode: always
         report_individual_runs: true

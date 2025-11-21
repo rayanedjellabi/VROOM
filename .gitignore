@@ -50,6 +50,7 @@ Makefile
 *.pdb
 
 # IDE - Visual Studio Code
+.cursor/
 .vscode/
 *.code-workspace
 
