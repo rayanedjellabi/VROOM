@@ -1,6 +1,7 @@
 #include <vroom/core/Engine.hpp>
 
 int main() {
+    // Use default config (headless=false)
     vroom::Engine engine;
 
     // Create editor scene

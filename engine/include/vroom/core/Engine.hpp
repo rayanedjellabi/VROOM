@@ -3,11 +3,23 @@
 #include <memory>
 #include "vroom/core/SceneManager.hpp"
 
+// Forward declarations
+struct GLFWwindow;
+
 namespace vroom {
+
+class VulkanRenderer;
+
+struct EngineConfig {
+    bool headless = false;
+    int windowWidth = 800;
+    int windowHeight = 600;
+    const char* windowTitle = "VROOM Engine";
+};
 
 class Engine {
 public:
-    Engine();
+    Engine(const EngineConfig& config = EngineConfig());
     ~Engine();
 
     /// \brief Updates the engine systems.
@@ -25,8 +37,15 @@ public:
     SceneManager& getSceneManager() { return *m_sceneManager; }
 
 private:
+    void initWindow();
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+
+    EngineConfig m_config;
     std::shared_ptr<SceneManager> m_sceneManager;
     bool m_isRunning;
+
+    GLFWwindow* m_window = nullptr;
+    std::unique_ptr<VulkanRenderer> m_renderer;
 };
 
 } // namespace vroom
