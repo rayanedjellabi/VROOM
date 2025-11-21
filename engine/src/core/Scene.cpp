@@ -1,16 +1,21 @@
 #include "vroom/core/Scene.hpp"
+#include "vroom/logging/LogMacros.hpp"
 
 namespace vroom {
 
-Scene::Scene() {}
+Scene::Scene() {
+    LOG_ENGINE_CLASS_DEBUG("Scene created");
+}
 
 Scene::~Scene() {
+    LOG_ENGINE_CLASS_DEBUG("Scene destroyed");
     clear();
 }
 
 Entity& Scene::createEntity() {
     auto entity = std::make_shared<Entity>(generateEntityId(), shared_from_this());
     m_entities.push_back(entity);
+    LOG_ENGINE_CLASS_DEBUG("Created Entity ID: " + std::to_string(entity->getId()));
     return *entity;
 }
 
@@ -55,7 +60,10 @@ void Scene::update(float deltaTime) {
 }
 
 void Scene::clear() {
-    m_entities.clear();
+    if (!m_entities.empty()) {
+        LOG_ENGINE_CLASS_INFO("Clearing scene, destroying " + std::to_string(m_entities.size()) + " entities");
+        m_entities.clear();
+    }
     m_nextEntityId = 1;
 }
 

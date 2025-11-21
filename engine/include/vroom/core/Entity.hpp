@@ -28,6 +28,10 @@ public:
     
     ~Entity();
 
+    /// \brief Gets the unique identifier of the entity.
+    /// \return The entity ID.
+    EntityId getId() const { return m_id; }
+
     /// \brief Updates the entity and all its enabled components.
     /// \param deltaTime Time elapsed since the last frame.
     void update(float deltaTime);

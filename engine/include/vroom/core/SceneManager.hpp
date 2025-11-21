@@ -18,6 +18,10 @@ public:
     /// \param path Path to the scene file (or identifier).
     void loadScene(const std::string& path);
 
+    /// \brief Loads an existing scene object, unloading all currently loaded scenes.
+    /// \param scene The scene object to load.
+    void loadScene(std::shared_ptr<Scene> scene);
+
     /// \brief Loads a scene asynchronously, unloading all currently loaded scenes.
     /// \param path Path to the scene file (or identifier).
     /// \return A future that completes when the scene is loaded.

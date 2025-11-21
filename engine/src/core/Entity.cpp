@@ -1,6 +1,8 @@
 #include "vroom/core/Entity.hpp"
 #include "vroom/core/Scene.hpp"
+#include "vroom/logging/LogMacros.hpp"
 #include <algorithm>
+#include <string>
 
 namespace vroom {
 
@@ -9,6 +11,8 @@ Entity::Entity(EntityId id, std::shared_ptr<Scene> scene)
 }
 
 Entity::~Entity() {
+    // LOG_ENGINE_CLASS_DEBUG("Destroying Entity ID: " + std::to_string(m_id)); // Too spammy for regular runs
+    
     // Detach children first
     // We create a copy because setParent(nullptr) modifies the m_children vector
     auto childrenCopy = m_children;
@@ -106,6 +110,7 @@ void Entity::setParent(Entity* parent) {
     Entity* p = parent;
     while (p) {
         if (p == this) {
+            LOG_ENGINE_CLASS_WARNING("Attempted to set parent that would create a cycle (Entity ID: " + std::to_string(m_id) + ")");
             return;
         }
         p = p->getParent();
