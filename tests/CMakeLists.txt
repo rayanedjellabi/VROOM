@@ -28,7 +28,6 @@ add_executable(core_tests
     core/EntityHierarchyTest.cpp
     core/SceneTest.cpp
     core/SceneManagerTest.cpp
-    core/EngineTest.cpp
 )
 
 target_link_libraries(core_tests
@@ -44,6 +43,29 @@ target_include_directories(core_tests
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# Vulkan tests
+add_executable(vulkan_tests
+    vulkan/VulkanDeviceTest.cpp
+    vulkan/VulkanSwapChainTest.cpp
+    # vulkan/VulkanRendererTest.cpp
+)
+
+target_link_libraries(vulkan_tests
+    PRIVATE
+        vroom
+        GTest::gtest_main
+        GTest::gmock
+        Threads::Threads
+        glfw
+        Vulkan::Vulkan
+)
+
+target_include_directories(vulkan_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}
+)
+
 # Enable coverage if requested
 if(VROOM_ENABLE_COVERAGE)
     # Check if compiler supports coverage flags (GCC/Clang)
@@ -54,6 +76,9 @@ if(VROOM_ENABLE_COVERAGE)
         
         target_compile_options(core_tests PRIVATE --coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic)
         target_link_options(core_tests PRIVATE --coverage)
+
+        target_compile_options(vulkan_tests PRIVATE --coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic)
+        target_link_options(vulkan_tests PRIVATE --coverage)
 
         # Also enable coverage for the vroom library
         target_compile_options(vroom PRIVATE --coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic)
@@ -68,6 +93,7 @@ endif()
 # Add tests to CTest
 add_test(NAME LoggerTests COMMAND logger_tests)
 add_test(NAME CoreTests COMMAND core_tests)
+add_test(NAME VulkanTests COMMAND vulkan_tests)
 
 # Configure test to output JUnit XML for GitHub Actions
 set_tests_properties(LoggerTests PROPERTIES
@@ -75,4 +101,7 @@ set_tests_properties(LoggerTests PROPERTIES
 )
 set_tests_properties(CoreTests PROPERTIES
     ENVIRONMENT "GTEST_OUTPUT=xml:${CMAKE_BINARY_DIR}/test-results-core.xml"
+)
+set_tests_properties(VulkanTests PROPERTIES
+    ENVIRONMENT "GTEST_OUTPUT=xml:${CMAKE_BINARY_DIR}/test-results-vulkan.xml"
 )

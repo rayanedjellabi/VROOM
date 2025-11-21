@@ -48,7 +48,7 @@ if(VROOM_ENABLE_MONO)
                 "/usr/local/lib"
                 "/Library/Frameworks/Mono.framework/Libraries"
                 "/Library/Frameworks/Mono.framework/Versions/Current/lib"
-        )
+            )
 
         if(MONO_INCLUDE_DIR AND MONO_LIBRARY)
             # Check for architecture mismatch on Apple Silicon
@@ -69,37 +69,37 @@ endif()
 target_compile_definitions(vroom PUBLIC VROOM_WITH_IMGUI=1)
 
 # Compile shaders to SPIR-V
-# find_program(GLSL_COMPILER glslc)
-# if(GLSL_COMPILER)
-#     set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
-#     set(SHADER_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
-#     file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})
+find_program(GLSL_COMPILER glslc)
+if(GLSL_COMPILER)
+    set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+    set(SHADER_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+    file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})
     
-#     add_custom_command(
-#         OUTPUT ${SHADER_OUTPUT_DIR}/shader.vert.spv
-#         COMMAND ${GLSL_COMPILER} -fshader-stage=vert -o ${SHADER_OUTPUT_DIR}/shader.vert.spv ${SHADER_DIR}/shader.vert
-#         DEPENDS ${SHADER_DIR}/shader.vert
-#         COMMENT "Compiling vertex shader"
-#     )
+    add_custom_command(
+        OUTPUT ${SHADER_OUTPUT_DIR}/shader.vert.spv
+        COMMAND ${GLSL_COMPILER} -fshader-stage=vert -o ${SHADER_OUTPUT_DIR}/shader.vert.spv ${SHADER_DIR}/shader.vert
+        DEPENDS ${SHADER_DIR}/shader.vert
+        COMMENT "Compiling vertex shader"
+    )
     
-#     add_custom_command(
-#         OUTPUT ${SHADER_OUTPUT_DIR}/shader.frag.spv
-#         COMMAND ${GLSL_COMPILER} -fshader-stage=frag -o ${SHADER_OUTPUT_DIR}/shader.frag.spv ${SHADER_DIR}/shader.frag
-#         DEPENDS ${SHADER_DIR}/shader.frag
-#         COMMENT "Compiling fragment shader"
-#     )
+    add_custom_command(
+        OUTPUT ${SHADER_OUTPUT_DIR}/shader.frag.spv
+        COMMAND ${GLSL_COMPILER} -fshader-stage=frag -o ${SHADER_OUTPUT_DIR}/shader.frag.spv ${SHADER_DIR}/shader.frag
+        DEPENDS ${SHADER_DIR}/shader.frag
+        COMMENT "Compiling fragment shader"
+    )
     
-#     add_custom_target(shaders DEPENDS ${SHADER_OUTPUT_DIR}/shader.vert.spv ${SHADER_OUTPUT_DIR}/shader.frag.spv)
-#     add_dependencies(vroom shaders)
+    add_custom_target(shaders DEPENDS ${SHADER_OUTPUT_DIR}/shader.vert.spv ${SHADER_OUTPUT_DIR}/shader.frag.spv)
+    add_dependencies(vroom shaders)
     
-#     # Copy shaders to build directory for runtime access
-#     add_custom_command(TARGET vroom POST_BUILD
-#         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/engine/shaders
-#         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#         ${SHADER_OUTPUT_DIR}/shader.vert.spv ${CMAKE_BINARY_DIR}/engine/shaders/shader.vert.spv
-#         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#         ${SHADER_OUTPUT_DIR}/shader.frag.spv ${CMAKE_BINARY_DIR}/engine/shaders/shader.frag.spv
-#     )
-# else()
-#     message(WARNING "glslc not found. Shaders will not be compiled. Install Vulkan SDK to compile shaders.")
-# endif()
+    # Copy shaders to build directory for runtime access
+    add_custom_command(TARGET vroom POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/engine/shaders
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${SHADER_OUTPUT_DIR}/shader.vert.spv ${CMAKE_BINARY_DIR}/engine/shaders/shader.vert.spv
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${SHADER_OUTPUT_DIR}/shader.frag.spv ${CMAKE_BINARY_DIR}/engine/shaders/shader.frag.spv
+    )
+else()
+    message(WARNING "glslc not found. Shaders will not be compiled. Install Vulkan SDK to compile shaders.")
+endif()
