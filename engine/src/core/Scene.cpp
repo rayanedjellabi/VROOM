@@ -17,7 +17,7 @@ Entity& Scene::createEntity() {
 void Scene::destroyEntity(Entity& entity) {
     // First, handle children recursively
     // We make a copy of the children list because it will be modified as we destroy them
-    auto children = entity.getChildren();
+    std::vector<Entity*> children = entity.getChildren();
     for (auto* child : children) {
         if (child) {
             destroyEntity(*child);

@@ -58,6 +58,27 @@ TEST_F(SceneTest, DestroyEntityWithChildren) {
     EXPECT_EQ(scene->getRootEntities().size(), 0);
 }
 
+TEST_F(SceneTest, DestroyEntityWithMultipleChildren_Regression) {
+    // This test ensures that destroying a parent with multiple children
+    // properly destroys all children and doesn't suffer from iterator invalidation
+    // if the children list were to be iterated by reference while being modified.
+    Entity& parent = scene->createEntity();
+    Entity& child1 = scene->createEntity();
+    Entity& child2 = scene->createEntity();
+    Entity& child3 = scene->createEntity();
+    
+    parent.addChild(&child1);
+    parent.addChild(&child2);
+    parent.addChild(&child3);
+    
+    EXPECT_EQ(scene->getRootEntities().size(), 1);
+    EXPECT_EQ(parent.getChildren().size(), 3);
+    
+    scene->destroyEntity(parent);
+    
+    EXPECT_EQ(scene->getRootEntities().size(), 0);
+}
+
 TEST_F(SceneTest, ClearScene) {
     scene->createEntity();
     scene->createEntity();
@@ -124,4 +145,3 @@ TEST_F(SceneTest, GetRootEntitiesOnlyReturnsRoots) {
     EXPECT_EQ(roots.size(), 1);
     EXPECT_EQ(roots[0], &parent);
 }
-

@@ -114,7 +114,7 @@ private:
     void handleActiveStateChange(bool wasActive, bool isNowActive);
 
     EntityId m_id = INVALID_ENTITY_ID;
-    std::shared_ptr<Scene> m_scene = nullptr;
+    std::weak_ptr<Scene> m_scene;
     std::vector<std::unique_ptr<Component>> m_components;
     bool m_active = true;
     Entity* m_parent = nullptr;

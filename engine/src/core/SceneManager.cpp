@@ -28,15 +28,15 @@ void SceneManager::loadScene(const std::string& path) {
 }
 
 std::future<void> SceneManager::loadSceneAsync(const std::string& path) {
-    return std::async(std::launch::async, [this, path]() {
+    return std::async(std::launch::async, [self = shared_from_this(), path]() {
         // Load the scene in the background thread
-        auto newScene = createSceneFromFile(path);
+        auto newScene = self->createSceneFromFile(path);
         
         // Lock only when swapping the scenes
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_scenes.clear();
-        m_scenes.push_back(newScene);
-        m_activeScene = newScene;
+        std::lock_guard<std::mutex> lock(self->m_mutex);
+        self->m_scenes.clear();
+        self->m_scenes.push_back(newScene);
+        self->m_activeScene = newScene;
     });
 }
 
@@ -52,13 +52,13 @@ void SceneManager::loadSceneAdditive(const std::string& path) {
 }
 
 std::future<void> SceneManager::loadSceneAdditiveAsync(const std::string& path) {
-    return std::async(std::launch::async, [this, path]() {
-        auto newScene = createSceneFromFile(path);
+    return std::async(std::launch::async, [self = shared_from_this(), path]() {
+        auto newScene = self->createSceneFromFile(path);
         
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_scenes.push_back(newScene);
-        if (!m_activeScene) {
-            m_activeScene = newScene;
+        std::lock_guard<std::mutex> lock(self->m_mutex);
+        self->m_scenes.push_back(newScene);
+        if (!self->m_activeScene) {
+            self->m_activeScene = newScene;
         }
     });
 }

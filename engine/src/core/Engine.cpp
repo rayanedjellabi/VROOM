@@ -6,7 +6,7 @@ namespace vroom {
 
 Engine::Engine() {
     LOG_ENGINE_INFO("Initializing VROOM Engine v" + Version::getVersionString() + " (" + Version::GIT_HASH + ")");
-    m_sceneManager = std::make_unique<SceneManager>();
+    m_sceneManager = std::make_shared<SceneManager>();
 }
 
 Engine::~Engine() {

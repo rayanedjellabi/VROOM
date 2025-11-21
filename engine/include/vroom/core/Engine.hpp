@@ -19,7 +19,7 @@ public:
     SceneManager& getSceneManager() { return *m_sceneManager; }
 
 private:
-    std::unique_ptr<SceneManager> m_sceneManager;
+    std::shared_ptr<SceneManager> m_sceneManager;
 };
 
 } // namespace vroom
