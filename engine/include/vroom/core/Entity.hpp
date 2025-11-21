@@ -38,7 +38,7 @@ public:
 
     /// \brief Checks if the entity is active.
     /// \return True if active, false otherwise.
-    bool isActive() const { return m_active; }
+    bool isActive() const;
 
     /// \brief Adds a component to the entity.
     /// \tparam T The type of component to add. Must inherit from Component.
@@ -89,11 +89,36 @@ public:
         return nullptr;
     }
 
+    /// \brief Sets the parent of this entity.
+    /// \param parent The new parent entity.
+    void setParent(Entity* parent);
+
+    /// \brief Gets the parent of this entity.
+    /// \return Pointer to the parent entity.
+    Entity* getParent() const { return m_parent; }
+
+    /// \brief Adds a child entity.
+    /// \param child The child entity to add.
+    void addChild(Entity* child);
+
+    /// \brief Removes a child entity.
+    /// \param child The child entity to remove.
+    void removeChild(Entity* child);
+
+    /// \brief Gets the children of this entity.
+    /// \return Reference to the vector of children.
+    const std::vector<Entity*>& getChildren() const { return m_children; }
+
 private:
+    /// \brief Helper to handle active state changes recursively.
+    void handleActiveStateChange(bool wasActive, bool isNowActive);
+
     EntityId m_id = INVALID_ENTITY_ID;
     std::shared_ptr<Scene> m_scene = nullptr;
     std::vector<std::unique_ptr<Component>> m_components;
     bool m_active = true;
+    Entity* m_parent = nullptr;
+    std::vector<Entity*> m_children;
 };
 
 } // namespace vroom

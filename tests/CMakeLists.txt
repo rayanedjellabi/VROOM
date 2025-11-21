@@ -25,6 +25,7 @@ target_include_directories(logger_tests
 add_executable(core_tests
     core/EntityComponentTest.cpp
     core/ComponentLifecycleTest.cpp
+    core/EntityHierarchyTest.cpp
 )
 
 target_link_libraries(core_tests
