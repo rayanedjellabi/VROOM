@@ -124,3 +124,16 @@ TEST_F(SceneManagerTest, UpdateCallsUpdateOnScenes) {
     // Let's clear the scene explicitly to force component destruction while we are still in the test body.
     scene1->clear();
 }
+
+TEST_F(SceneManagerTest, ComponentCanAccessSceneManager) {
+    // The default scene created in SceneManager constructor should have the reference set
+    auto activeScene = sceneManager->getActiveScene();
+    ASSERT_NE(activeScene, nullptr);
+    EXPECT_EQ(activeScene->getSceneManager(), sceneManager.get());
+
+    auto& entity = activeScene->createEntity();
+    auto& component = entity.addComponent<MockComponent>();
+
+    EXPECT_EQ(entity.getSceneManager(), sceneManager.get());
+    EXPECT_EQ(component.getSceneManager(), sceneManager.get());
+}

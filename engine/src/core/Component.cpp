@@ -23,5 +23,12 @@ void Component::setEnabled(bool enabled) {
     }
 }
 
+SceneManager* Component::getSceneManager() const {
+    if (m_entity) {
+        return m_entity->getSceneManager();
+    }
+    return nullptr;
+}
+
 } // namespace vroom
 

@@ -29,6 +29,10 @@ public:
     /// This triggers onEnable() or onDisable() if the effective state changes.
     void setEnabled(bool enabled);
 
+    /// \brief Gets the SceneManager associated with the entity's scene.
+    /// \return Pointer to the SceneManager, or nullptr if not attached.
+    class SceneManager* getSceneManager() const;
+
     // Internal use for the engine to mark start as called
     void markStarted() { m_hasStarted = true; }
 

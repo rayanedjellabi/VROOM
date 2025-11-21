@@ -9,6 +9,7 @@ namespace vroom {
 SceneManager::SceneManager() {
     // Initialize with a default empty scene
     m_activeScene = std::make_shared<Scene>();
+    m_activeScene->setSceneManager(this);
     m_scenes.push_back(m_activeScene);
 }
 
@@ -103,6 +104,7 @@ std::shared_ptr<Scene> SceneManager::createSceneFromFile(const std::string& path
     // We could populate it with some test entities based on 'path' for demonstration.
     
     auto scene = std::make_shared<Scene>();
+    scene->setSceneManager(this);
     // Example: scene->createEntity();
     return scene;
 }

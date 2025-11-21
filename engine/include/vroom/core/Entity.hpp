@@ -109,6 +109,10 @@ public:
     /// \return Reference to the vector of children.
     const std::vector<Entity*>& getChildren() const { return m_children; }
 
+    /// \brief Gets the SceneManager that owns the scene this entity is in.
+    /// \return Pointer to the SceneManager, or nullptr if not attached.
+    class SceneManager* getSceneManager() const;
+
 private:
     /// \brief Helper to handle active state changes recursively.
     void handleActiveStateChange(bool wasActive, bool isNowActive);

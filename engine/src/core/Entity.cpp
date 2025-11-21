@@ -1,4 +1,5 @@
 #include "vroom/core/Entity.hpp"
+#include "vroom/core/Scene.hpp"
 #include <algorithm>
 
 namespace vroom {
@@ -142,6 +143,13 @@ void Entity::removeChild(Entity* child) {
     if (child && child->getParent() == this) {
         child->setParent(nullptr);
     }
+}
+
+SceneManager* Entity::getSceneManager() const {
+    if (auto scene = m_scene.lock()) {
+        return scene->getSceneManager();
+    }
+    return nullptr;
 }
 
 } // namespace vroom

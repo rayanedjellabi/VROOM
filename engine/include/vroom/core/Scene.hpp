@@ -16,6 +16,14 @@ public:
     /// \return Reference to the newly created entity.
     Entity& createEntity();
 
+    /// \brief Sets the SceneManager for this scene.
+    /// \param sceneManager Pointer to the SceneManager.
+    void setSceneManager(SceneManager* sceneManager) { m_sceneManager = sceneManager; }
+
+    /// \brief Gets the SceneManager associated with this scene.
+    /// \return Pointer to the SceneManager.
+    SceneManager* getSceneManager() const { return m_sceneManager; }
+
     /// \brief Destroys an entity and all its children.
     /// \param entity The entity to destroy.
     void destroyEntity(Entity& entity);
@@ -34,6 +42,7 @@ public:
 private:
     EntityId m_nextEntityId = 1;
     std::vector<std::shared_ptr<Entity>> m_entities;
+    SceneManager* m_sceneManager = nullptr;
     
     // Helper to generate unique IDs
     EntityId generateEntityId();
