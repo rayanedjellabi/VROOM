@@ -18,47 +18,47 @@ Logger::Logger()
 
 Logger::~Logger() {
     // Note: We don't delete streams here as the caller manages their lifetime
-    // Streams passed to SetEngineStream/SetApplicationStream must remain valid
-    // until ResetEngineStream/ResetApplicationStream is called or Logger is destroyed
+    // Streams passed to setEngineStream/setApplicationStream must remain valid
+    // until resetEngineStream/resetApplicationStream is called or Logger is destroyed
 }
 
-void Logger::SetEngineStream(std::ostream* stream) {
+void Logger::setEngineStream(std::ostream* stream) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_engineStream = stream ? stream : &std::cout;
 }
 
-void Logger::SetApplicationStream(std::ostream* stream) {
+void Logger::setApplicationStream(std::ostream* stream) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_applicationStream = stream ? stream : &std::cout;
 }
 
-void Logger::SetEngineErrorStream(std::ostream* stream) {
+void Logger::setEngineErrorStream(std::ostream* stream) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_engineErrorStream = stream ? stream : &std::cerr;
 }
 
-void Logger::SetApplicationErrorStream(std::ostream* stream) {
+void Logger::setApplicationErrorStream(std::ostream* stream) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_applicationErrorStream = stream ? stream : &std::cerr;
 }
 
-void Logger::ResetEngineStream() {
-    SetEngineStream(&std::cout);
+void Logger::resetEngineStream() {
+    setEngineStream(&std::cout);
 }
 
-void Logger::ResetApplicationStream() {
-    SetApplicationStream(&std::cout);
+void Logger::resetApplicationStream() {
+    setApplicationStream(&std::cout);
 }
 
-void Logger::ResetEngineErrorStream() {
-    SetEngineErrorStream(&std::cerr);
+void Logger::resetEngineErrorStream() {
+    setEngineErrorStream(&std::cerr);
 }
 
-void Logger::ResetApplicationErrorStream() {
-    SetApplicationErrorStream(&std::cerr);
+void Logger::resetApplicationErrorStream() {
+    setApplicationErrorStream(&std::cerr);
 }
 
-std::ostream* Logger::GetStream(LogLevel level, LogCategory category) {
+std::ostream* Logger::getStream(LogLevel level, LogCategory category) {
     // Error level logs go to error streams, others go to normal streams
     if (level == LogLevel::Error) {
         switch (category) {
@@ -81,7 +81,7 @@ std::ostream* Logger::GetStream(LogLevel level, LogCategory category) {
     }
 }
 
-std::string Logger::FormatMessage(LogLevel level, LogCategory category, const std::string& className, const std::string& message) {
+std::string Logger::formatMessage(LogLevel level, LogCategory category, const std::string& className, const std::string& message) {
     std::ostringstream oss;
     
     // Get current time
@@ -106,35 +106,34 @@ std::string Logger::FormatMessage(LogLevel level, LogCategory category, const st
     return oss.str();
 }
 
-void Logger::Log(LogLevel level, LogCategory category, const std::string& className, const std::string& message) {
+void Logger::log(LogLevel level, LogCategory category, const std::string& className, const std::string& message) {
     std::lock_guard<std::mutex> lock(m_mutex);
     
-    std::ostream* stream = GetStream(level, category);
-    *stream << FormatMessage(level, category, className, message) << std::endl;
+    std::ostream* stream = getStream(level, category);
+    *stream << formatMessage(level, category, className, message) << std::endl;
     stream->flush();
 }
 
-void Logger::Debug(LogCategory category, const std::string& className, const std::string& message) {
-    Log(LogLevel::Debug, category, className, message);
+void Logger::debug(LogCategory category, const std::string& className, const std::string& message) {
+    log(LogLevel::Debug, category, className, message);
 }
 
-void Logger::Info(LogCategory category, const std::string& className, const std::string& message) {
-    Log(LogLevel::Info, category, className, message);
+void Logger::info(LogCategory category, const std::string& className, const std::string& message) {
+    log(LogLevel::Info, category, className, message);
 }
 
-void Logger::Warning(LogCategory category, const std::string& className, const std::string& message) {
-    Log(LogLevel::Warning, category, className, message);
+void Logger::warning(LogCategory category, const std::string& className, const std::string& message) {
+    log(LogLevel::Warning, category, className, message);
 }
 
-void Logger::Error(LogCategory category, const std::string& className, const std::string& message) {
-    Log(LogLevel::Error, category, className, message);
+void Logger::error(LogCategory category, const std::string& className, const std::string& message) {
+    log(LogLevel::Error, category, className, message);
 }
 
-Logger& Logger::GetInstance() {
+Logger& Logger::getInstance() {
     static Logger instance;
     return instance;
 }
 
 } // namespace logging
 } // namespace vroom
-

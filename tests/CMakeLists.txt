@@ -22,6 +22,25 @@ target_include_directories(logger_tests
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# Core tests
+add_executable(core_tests
+    core/EntityComponentTest.cpp
+    core/ComponentLifecycleTest.cpp
+)
+
+target_link_libraries(core_tests
+    PRIVATE
+        vroom
+        GTest::gtest
+        GTest::gtest_main
+        Threads::Threads
+)
+
+target_include_directories(core_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 # Enable coverage if requested
 if(VROOM_ENABLE_COVERAGE)
     # Check if compiler supports coverage flags (GCC/Clang)
@@ -30,6 +49,9 @@ if(VROOM_ENABLE_COVERAGE)
         target_compile_options(logger_tests PRIVATE --coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic)
         target_link_options(logger_tests PRIVATE --coverage)
         
+        target_compile_options(core_tests PRIVATE --coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic)
+        target_link_options(core_tests PRIVATE --coverage)
+
         # Also enable coverage for the vroom library
         target_compile_options(vroom PRIVATE --coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic)
         target_link_options(vroom PRIVATE --coverage)
@@ -40,11 +62,14 @@ if(VROOM_ENABLE_COVERAGE)
     endif()
 endif()
 
-# Add test to CTest
+# Add tests to CTest
 add_test(NAME LoggerTests COMMAND logger_tests)
+add_test(NAME CoreTests COMMAND core_tests)
 
 # Configure test to output JUnit XML for GitHub Actions
 set_tests_properties(LoggerTests PROPERTIES
-    ENVIRONMENT "GTEST_OUTPUT=xml:${CMAKE_BINARY_DIR}/test-results.xml"
+    ENVIRONMENT "GTEST_OUTPUT=xml:${CMAKE_BINARY_DIR}/test-results-logger.xml"
 )
-
+set_tests_properties(CoreTests PROPERTIES
+    ENVIRONMENT "GTEST_OUTPUT=xml:${CMAKE_BINARY_DIR}/test-results-core.xml"
+)

@@ -6,16 +6,32 @@
 namespace vroom {
 namespace logging {
 
+/// \brief Specialized logger for engine-level events.
 class EngineLogger {
 public:
-    // Log with class name
-    void Debug(const std::string& className, const std::string& message);
-    void Info(const std::string& className, const std::string& message);
-    void Warning(const std::string& className, const std::string& message);
-    void Error(const std::string& className, const std::string& message);
+    /// \brief Logs a debug message with class context.
+    /// \param className The name of the class.
+    /// \param message The log message.
+    void debug(const std::string& className, const std::string& message);
 
-    // Get singleton instance
-    static EngineLogger& GetInstance();
+    /// \brief Logs an info message with class context.
+    /// \param className The name of the class.
+    /// \param message The log message.
+    void info(const std::string& className, const std::string& message);
+
+    /// \brief Logs a warning message with class context.
+    /// \param className The name of the class.
+    /// \param message The log message.
+    void warning(const std::string& className, const std::string& message);
+
+    /// \brief Logs an error message with class context.
+    /// \param className The name of the class.
+    /// \param message The log message.
+    void error(const std::string& className, const std::string& message);
+
+    /// \brief Gets the singleton instance of the EngineLogger.
+    /// \return Reference to the EngineLogger instance.
+    static EngineLogger& getInstance();
 
 private:
     EngineLogger() = default;
@@ -26,4 +42,3 @@ private:
 
 } // namespace logging
 } // namespace vroom
-

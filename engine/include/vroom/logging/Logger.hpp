@@ -10,36 +10,74 @@
 namespace vroom {
 namespace logging {
 
+/// \brief Central logger class handling stream outputs for different categories and levels.
 class Logger {
 public:
     Logger();
     ~Logger();
 
-    // Set output streams for different categories
-    void SetEngineStream(std::ostream* stream);
-    void SetApplicationStream(std::ostream* stream);
-    
-    // Set error streams (defaults to stderr)
-    void SetEngineErrorStream(std::ostream* stream);
-    void SetApplicationErrorStream(std::ostream* stream);
-    
-    // Reset streams to default (std::cout for normal, std::cerr for errors)
-    void ResetEngineStream();
-    void ResetApplicationStream();
-    void ResetEngineErrorStream();
-    void ResetApplicationErrorStream();
+    /// \brief Sets the output stream for engine logs.
+    /// \param stream Pointer to the output stream (e.g., &std::cout).
+    void setEngineStream(std::ostream* stream);
 
-    // Log with class name
-    void Log(LogLevel level, LogCategory category, const std::string& className, const std::string& message);
+    /// \brief Sets the output stream for application logs.
+    /// \param stream Pointer to the output stream (e.g., &std::cout).
+    void setApplicationStream(std::ostream* stream);
     
-    // Convenience methods
-    void Debug(LogCategory category, const std::string& className, const std::string& message);
-    void Info(LogCategory category, const std::string& className, const std::string& message);
-    void Warning(LogCategory category, const std::string& className, const std::string& message);
-    void Error(LogCategory category, const std::string& className, const std::string& message);
+    /// \brief Sets the error output stream for engine logs.
+    /// \param stream Pointer to the error output stream (e.g., &std::cerr).
+    void setEngineErrorStream(std::ostream* stream);
 
-    // Get singleton instance
-    static Logger& GetInstance();
+    /// \brief Sets the error output stream for application logs.
+    /// \param stream Pointer to the error output stream (e.g., &std::cerr).
+    void setApplicationErrorStream(std::ostream* stream);
+    
+    /// \brief Resets the engine output stream to default (std::cout).
+    void resetEngineStream();
+
+    /// \brief Resets the application output stream to default (std::cout).
+    void resetApplicationStream();
+
+    /// \brief Resets the engine error output stream to default (std::cerr).
+    void resetEngineErrorStream();
+
+    /// \brief Resets the application error output stream to default (std::cerr).
+    void resetApplicationErrorStream();
+
+    /// \brief Logs a message with specific level, category, and class context.
+    /// \param level The log level (Debug, Info, etc.).
+    /// \param category The log category (Engine or Application).
+    /// \param className The name of the class where the log originates.
+    /// \param message The log message.
+    void log(LogLevel level, LogCategory category, const std::string& className, const std::string& message);
+    
+    /// \brief Convenience method for logging debug messages.
+    /// \param category The log category.
+    /// \param className The name of the class.
+    /// \param message The log message.
+    void debug(LogCategory category, const std::string& className, const std::string& message);
+
+    /// \brief Convenience method for logging info messages.
+    /// \param category The log category.
+    /// \param className The name of the class.
+    /// \param message The log message.
+    void info(LogCategory category, const std::string& className, const std::string& message);
+
+    /// \brief Convenience method for logging warning messages.
+    /// \param category The log category.
+    /// \param className The name of the class.
+    /// \param message The log message.
+    void warning(LogCategory category, const std::string& className, const std::string& message);
+
+    /// \brief Convenience method for logging error messages.
+    /// \param category The log category.
+    /// \param className The name of the class.
+    /// \param message The log message.
+    void error(LogCategory category, const std::string& className, const std::string& message);
+
+    /// \brief Gets the singleton instance of the Logger.
+    /// \return Reference to the Logger instance.
+    static Logger& getInstance();
 
 private:
     std::ostream* m_engineStream;
@@ -48,10 +86,9 @@ private:
     std::ostream* m_applicationErrorStream;
     std::mutex m_mutex;
 
-    std::ostream* GetStream(LogLevel level, LogCategory category);
-    std::string FormatMessage(LogLevel level, LogCategory category, const std::string& className, const std::string& message);
+    std::ostream* getStream(LogLevel level, LogCategory category);
+    std::string formatMessage(LogLevel level, LogCategory category, const std::string& className, const std::string& message);
 };
 
 } // namespace logging
 } // namespace vroom
-
