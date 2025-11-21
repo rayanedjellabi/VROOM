@@ -12,7 +12,6 @@ add_executable(logger_tests
 target_link_libraries(logger_tests
     PRIVATE
         vroom
-        GTest::gtest
         GTest::gtest_main
         Threads::Threads
 )
@@ -31,7 +30,6 @@ add_executable(core_tests
 target_link_libraries(core_tests
     PRIVATE
         vroom
-        GTest::gtest
         GTest::gtest_main
         Threads::Threads
 )

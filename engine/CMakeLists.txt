@@ -25,35 +25,44 @@ target_link_libraries(vroom
 )
 
 # Mono embedding support for C# scripting
-# Skip pkg-config to avoid hangs - directly set paths on macOS
-if(APPLE)
-    # Try to find Mono using standard CMake mechanisms
-    find_path(MONO_INCLUDE_DIR
-        NAMES mono/jit/jit.h
-        HINTS
-            "/opt/homebrew/include"
-            "/usr/local/include"
-            "/Library/Frameworks/Mono.framework/Headers"
-            "/Library/Frameworks/Mono.framework/Versions/Current/include"
-        PATH_SUFFIXES mono-2.0
-    )
+option(VROOM_ENABLE_MONO "Enable Mono C# scripting support" ON)
 
-    find_library(MONO_LIBRARY
-        NAMES mono-2.0 mono
-        HINTS
-            "/opt/homebrew/lib"
-            "/usr/local/lib"
-            "/Library/Frameworks/Mono.framework/Libraries"
-            "/Library/Frameworks/Mono.framework/Versions/Current/lib"
-    )
+if(VROOM_ENABLE_MONO)
+    # Skip pkg-config to avoid hangs - directly set paths on macOS
+    if(APPLE)
+        # Try to find Mono using standard CMake mechanisms
+        find_path(MONO_INCLUDE_DIR
+            NAMES mono/jit/jit.h
+            HINTS
+                "/opt/homebrew/include"
+                "/usr/local/include"
+                "/Library/Frameworks/Mono.framework/Headers"
+                "/Library/Frameworks/Mono.framework/Versions/Current/include"
+            PATH_SUFFIXES mono-2.0
+        )
 
-    if(MONO_INCLUDE_DIR AND MONO_LIBRARY)
-        target_include_directories(vroom PUBLIC ${MONO_INCLUDE_DIR})
-        target_link_libraries(vroom PUBLIC ${MONO_LIBRARY})
-        target_compile_definitions(vroom PUBLIC VROOM_WITH_MONO=1)
-        message(STATUS "Mono found: ${MONO_LIBRARY}")
-    else()
-        message(WARNING "Mono not found. C# scripting will be disabled.")
+        find_library(MONO_LIBRARY
+            NAMES mono-2.0 mono
+            HINTS
+                "/opt/homebrew/lib"
+                "/usr/local/lib"
+                "/Library/Frameworks/Mono.framework/Libraries"
+                "/Library/Frameworks/Mono.framework/Versions/Current/lib"
+        )
+
+        if(MONO_INCLUDE_DIR AND MONO_LIBRARY)
+            # Check for architecture mismatch on Apple Silicon
+            if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64" AND MONO_LIBRARY MATCHES "Mono.framework")
+                 message(WARNING "Detected Mono Framework on Apple Silicon. This is often x86_64 only. If you experience linker warnings or errors, install Mono via Homebrew (brew install mono) or disable Mono support.")
+            endif()
+
+            target_include_directories(vroom PUBLIC ${MONO_INCLUDE_DIR})
+            target_link_libraries(vroom PUBLIC ${MONO_LIBRARY})
+            target_compile_definitions(vroom PUBLIC VROOM_WITH_MONO=1)
+            message(STATUS "Mono found: ${MONO_LIBRARY}")
+        else()
+            message(WARNING "Mono not found. C# scripting will be disabled.")
+        endif()
     endif()
 endif()
 
