@@ -92,14 +92,32 @@ if(GLSL_COMPILER)
     add_custom_target(shaders DEPENDS ${SHADER_OUTPUT_DIR}/shader.vert.spv ${SHADER_OUTPUT_DIR}/shader.frag.spv)
     add_dependencies(vroom shaders)
     
-    # Copy shaders to build directory for runtime access
-    add_custom_command(TARGET vroom POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/engine/shaders
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${SHADER_OUTPUT_DIR}/shader.vert.spv ${CMAKE_BINARY_DIR}/engine/shaders/shader.vert.spv
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${SHADER_OUTPUT_DIR}/shader.frag.spv ${CMAKE_BINARY_DIR}/engine/shaders/shader.frag.spv
+    # Prepare staging area for packaging
+    set(ENGINE_ASSETS_STAGING "${CMAKE_CURRENT_BINARY_DIR}/staging")
+    
+    add_custom_command(
+        OUTPUT ${ENGINE_ASSETS_STAGING}/shaders/shader.vert.spv ${ENGINE_ASSETS_STAGING}/shaders/shader.frag.spv
+               ${ENGINE_ASSETS_STAGING}/shaders/shader.vert ${ENGINE_ASSETS_STAGING}/shaders/shader.frag
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${ENGINE_ASSETS_STAGING}/shaders
+        COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_OUTPUT_DIR}/shader.vert.spv ${ENGINE_ASSETS_STAGING}/shaders/shader.vert.spv
+        COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_OUTPUT_DIR}/shader.frag.spv ${ENGINE_ASSETS_STAGING}/shaders/shader.frag.spv
+        COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_DIR}/shader.vert ${ENGINE_ASSETS_STAGING}/shaders/shader.vert
+        COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_DIR}/shader.frag ${ENGINE_ASSETS_STAGING}/shaders/shader.frag
+        DEPENDS ${SHADER_OUTPUT_DIR}/shader.vert.spv ${SHADER_OUTPUT_DIR}/shader.frag.spv
     )
+
+    # Package engine assets
+    set(ENGINE_PACKAGE "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/engine/engine.vrpk")
+    add_custom_command(
+        OUTPUT ${ENGINE_PACKAGE}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/engine
+        COMMAND $<TARGET_FILE:vroom_packager> ${ENGINE_ASSETS_STAGING} ${ENGINE_PACKAGE}
+        DEPENDS vroom_packager ${ENGINE_ASSETS_STAGING}/shaders/shader.vert.spv ${ENGINE_ASSETS_STAGING}/shaders/shader.frag.spv
+        COMMENT "Packaging engine assets..."
+    )
+
+    add_custom_target(package_engine_assets ALL DEPENDS ${ENGINE_PACKAGE})
+    add_dependencies(vroom package_engine_assets)
 else()
     message(WARNING "glslc not found. Shaders will not be compiled. Install Vulkan SDK to compile shaders.")
 endif()

@@ -1,5 +1,6 @@
 #include "vroom/vulkan/VulkanRenderer.hpp"
 #include "vroom/logging/LogMacros.hpp"
+#include "vroom/asset/ShaderAsset.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -9,11 +10,11 @@
 #include <cstdlib>
 #include <limits>
 #include <set>
-#include <fstream>
 
 namespace vroom {
 
-VulkanRenderer::VulkanRenderer() {
+VulkanRenderer::VulkanRenderer(AssetManager& assetManager) 
+    : m_assetManager(assetManager) {
 }
 
 VulkanRenderer::~VulkanRenderer() {
@@ -134,11 +135,19 @@ void VulkanRenderer::createRenderPass() {
 }
 
 void VulkanRenderer::createGraphicsPipeline() {
-    auto vertShaderCode = readFile("engine/shaders/shader.vert.spv");
-    auto fragShaderCode = readFile("engine/shaders/shader.frag.spv");
+    // Use AssetManager to load shaders
+    auto vertShader = m_assetManager.getAsset<ShaderAsset>("shaders/shader.vert");
+    auto fragShader = m_assetManager.getAsset<ShaderAsset>("shaders/shader.frag");
 
-    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+    if (!vertShader) {
+        throw std::runtime_error("failed to load vertex shader: shaders/shader.vert");
+    }
+    if (!fragShader) {
+        throw std::runtime_error("failed to load fragment shader: shaders/shader.frag");
+    }
+
+    VkShaderModule vertShaderModule = createShaderModule(vertShader->getData());
+    VkShaderModule fragShaderModule = createShaderModule(fragShader->getData());
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -426,31 +435,6 @@ VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code)
     }
 
     return shaderModule;
-}
-
-std::vector<char> VulkanRenderer::readFile(const std::string& filename) {
-    std::vector<std::string> attempts = {
-        filename,
-        "build/" + filename
-    };
-
-    for (const auto& path : attempts) {
-        std::ifstream file(path, std::ios::ate | std::ios::binary);
-
-        if (file.is_open()) {
-            size_t fileSize = (size_t) file.tellg();
-            std::vector<char> buffer(fileSize);
-
-            file.seekg(0);
-            file.read(buffer.data(), fileSize);
-
-            file.close();
-
-            return buffer;
-        }
-    }
-
-    throw std::runtime_error("failed to open file: " + filename);
 }
 
 } // namespace vroom

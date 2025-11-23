@@ -7,6 +7,7 @@
 
 #include "vroom/vulkan/VulkanDevice.hpp"
 #include "vroom/vulkan/VulkanSwapChain.hpp"
+#include "vroom/asset/AssetManager.hpp" // Include AssetManager
 
 struct GLFWwindow;
 
@@ -14,7 +15,7 @@ namespace vroom {
 
 class VulkanRenderer {
 public:
-    VulkanRenderer();
+    VulkanRenderer(AssetManager& assetManager); // Pass AssetManager
     ~VulkanRenderer();
 
     void init(GLFWwindow* window);
@@ -33,7 +34,9 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     VkShaderModule createShaderModule(const std::vector<char>& code);
-    static std::vector<char> readFile(const std::string& filename);
+    // Removed readFile as we use AssetManager now
+
+    AssetManager& m_assetManager; // Reference to AssetManager
 
     GLFWwindow* m_window = nullptr;
     
