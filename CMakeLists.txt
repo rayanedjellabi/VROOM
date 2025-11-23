@@ -84,6 +84,11 @@ include(FetchContent)
 # ---- Dependencies ----
 find_package(Vulkan REQUIRED)
 
+# Set output directories for artifacts
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
 FetchContent_Declare(
     glfw
     GIT_REPOSITORY https://github.com/glfw/glfw.git
@@ -144,6 +149,18 @@ if(NOT TARGET ImGui)
     target_link_libraries(ImGui PUBLIC glfw Vulkan::Vulkan)
 endif()
 
+# Package assets directory if it exists
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+    set(ASSETS_PACKAGE "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets.vrpk")
+    add_custom_command(
+        OUTPUT ${ASSETS_PACKAGE}
+        COMMAND $<TARGET_FILE:vroom_packager> "${CMAKE_CURRENT_SOURCE_DIR}/assets" "${ASSETS_PACKAGE}"
+        DEPENDS vroom_packager
+        COMMENT "Packaging project assets..."
+    )
+    add_custom_target(package_project_assets ALL DEPENDS ${ASSETS_PACKAGE})
+endif()
+
 add_subdirectory(engine)
 
 if(VROOM_BUILD_VROOM_EDITOR)
@@ -153,6 +170,9 @@ if(VROOM_BUILD_VROOM_EDITOR)
         message(WARNING "vroom_editor directory not found. Skipping editor build.")
     endif()
 endif()
+
+# Tools
+add_subdirectory(tools/packager)
 
 # Enable testing
 enable_testing()

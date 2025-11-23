@@ -1,7 +1,11 @@
 #include "vroom/core/Engine.hpp"
 #include "vroom/logging/LogMacros.hpp"
 #include "vroom/core/Version.hpp"
+#include "vroom/core/Platform.hpp"
 #include "vroom/vulkan/VulkanRenderer.hpp"
+#include "vroom/asset/AssetProvider.hpp"
+#include "vroom/asset/ShaderAsset.hpp"
+#include "vroom/asset/ShaderCompiler.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -9,6 +13,7 @@
 #include <chrono>
 #include <stdexcept>
 #include <thread>
+#include <filesystem>
 
 namespace vroom {
 
@@ -16,10 +21,94 @@ Engine::Engine(const EngineConfig& config)
     : m_config(config), m_isRunning(false) {
     LOG_ENGINE_INFO("Initializing VROOM Engine v" + Version::getVersionString() + " (" + Version::GIT_HASH + ")");
     
+    // Initialize Asset Manager
+    m_assetManager = std::make_unique<AssetManager>();
+    
+    // Initialize default shader compiler
+    m_assetManager->setShaderCompiler(std::make_unique<SystemShaderCompiler>());
+
+    // Register ShaderAsset loader
+    m_assetManager->registerLoader<ShaderAsset>([this](const std::vector<char>& data, const std::string& path) -> std::shared_ptr<ShaderAsset> {
+        std::string ext = std::filesystem::path(path).extension().string();
+        ShaderStage stage = ShaderStage::Unknown;
+
+        if (ext == ".vert" || ext == ".vs") stage = ShaderStage::Vertex;
+        else if (ext == ".frag" || ext == ".fs") stage = ShaderStage::Fragment;
+        else if (ext == ".comp") stage = ShaderStage::Compute;
+        else if (ext == ".geom") stage = ShaderStage::Geometry;
+        else if (ext == ".tesc") stage = ShaderStage::TessellationControl;
+        else if (ext == ".tese") stage = ShaderStage::TessellationEvaluation;
+        
+        // Check if it's already a SPIR-V binary
+        if (ext == ".spv") {
+            // Can't easily determine stage from just binary without parsing SPIR-V or relying on naming convention
+            // For now, assume naming convention shader.vert.spv
+             std::string stem = std::filesystem::path(path).stem().extension().string();
+             if (stem == ".vert") stage = ShaderStage::Vertex;
+             else if (stem == ".frag") stage = ShaderStage::Fragment;
+             
+             return std::make_shared<ShaderAsset>(data, stage);
+        }
+
+        // It's source code, compile it
+        auto compiler = m_assetManager->getShaderCompiler();
+        if (compiler) {
+            std::string source(data.begin(), data.end());
+            auto spv = compiler->compile(path, source, stage);
+            if (spv) {
+                return std::make_shared<ShaderAsset>(*spv, stage);
+            }
+        } else {
+            LOG_ENGINE_ERROR("No shader compiler available to compile: " + path);
+        }
+
+        return nullptr;
+    });
+
+    // Look for assets package relative to executable
+    auto baseDir = Platform::getExecutableDir();
+    auto assetsPackage = baseDir / "assets.vrpk";
+    
+    if (std::filesystem::exists(assetsPackage)) {
+        LOG_ENGINE_INFO("Found assets package: " + assetsPackage.string());
+        m_assetManager->addProvider(std::make_unique<PackageAssetProvider>(assetsPackage));
+    } else {
+        // Fallback to directory relative to executable or CWD
+        auto defaultAssetsPath = baseDir / "assets";
+        if (!std::filesystem::exists(defaultAssetsPath)) {
+             defaultAssetsPath = std::filesystem::current_path() / "assets";
+        }
+
+        if (std::filesystem::exists(defaultAssetsPath)) {
+            LOG_ENGINE_INFO("Found default assets directory: " + defaultAssetsPath.string());
+            m_assetManager->addProvider(std::make_unique<DiskAssetProvider>(defaultAssetsPath));
+        } else {
+            LOG_ENGINE_WARNING("Default assets not found (checked assets.vrpk and ./assets)");
+        }
+    }
+
+    // Look for engine assets package relative to executable
+    auto enginePackage = baseDir / "engine/engine.vrpk";
+    if (std::filesystem::exists(enginePackage)) {
+        LOG_ENGINE_INFO("Found engine package: " + enginePackage.string());
+        m_assetManager->addProvider(std::make_unique<PackageAssetProvider>(enginePackage));
+    } else {
+        // Fallback to directory
+        auto engineAssetsPath = baseDir / "engine";
+        if (!std::filesystem::exists(engineAssetsPath)) {
+            engineAssetsPath = std::filesystem::current_path() / "engine";
+        }
+
+        if (std::filesystem::exists(engineAssetsPath)) {
+            LOG_ENGINE_INFO("Found engine assets directory: " + engineAssetsPath.string());
+            m_assetManager->addProvider(std::make_unique<DiskAssetProvider>(engineAssetsPath));
+        }
+    }
+
     if (!m_config.headless) {
         initWindow();
 
-        m_renderer = std::make_unique<VulkanRenderer>();
+        m_renderer = std::make_unique<VulkanRenderer>(*m_assetManager);
         try {
             m_renderer->init(m_window);
         } catch (const std::exception& e) {
@@ -48,6 +137,7 @@ Engine::~Engine() {
     }
 
     m_sceneManager.reset();
+    m_assetManager.reset();
     LOG_ENGINE_INFO("Engine shutdown complete, goodbye!");
 }
 

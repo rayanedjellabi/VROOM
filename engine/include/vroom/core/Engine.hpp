@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "vroom/core/SceneManager.hpp"
+#include "vroom/asset/AssetManager.hpp"
 
 // Forward declarations
 struct GLFWwindow;
@@ -36,12 +37,17 @@ public:
     /// \return Reference to the scene manager.
     SceneManager& getSceneManager() { return *m_sceneManager; }
 
+    /// \brief Gets the asset manager.
+    /// \return Reference to the asset manager.
+    AssetManager& getAssetManager() { return *m_assetManager; }
+
 private:
     void initWindow();
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     EngineConfig m_config;
     std::shared_ptr<SceneManager> m_sceneManager;
+    std::unique_ptr<AssetManager> m_assetManager;
     bool m_isRunning;
 
     GLFWwindow* m_window = nullptr;

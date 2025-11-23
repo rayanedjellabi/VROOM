@@ -28,6 +28,7 @@ add_executable(core_tests
     core/EntityHierarchyTest.cpp
     core/SceneTest.cpp
     core/SceneManagerTest.cpp
+    core/AssetManagerTest.cpp
 )
 
 target_link_libraries(core_tests
